@@ -1,6 +1,8 @@
 using ImageStore.Application.Auth;
 using ImageStore.Application.Images;
 using ImageStore.Application.Images.Storage;
+using ImageStore.Application.Posts;
+using ImageStore.Application.Social;
 using ImageStore.Infrastructure.HealthChecks;
 using ImageStore.Infrastructure.Identity;
 using ImageStore.Infrastructure.Persistence;
@@ -40,6 +42,10 @@ public static class DependencyInjection
         // Options are resolved lazily so that test hosts and environment overrides are honoured.
         services.AddDbContext<ImageStoreDbContext>(ConfigureDatabase);
         services.AddScoped<IImageRepository, ImageRepository>();
+        services.AddScoped<ISocialRepository, SocialRepository>();
+        services.AddScoped<IPostRepository, PostRepository>();
+        services.AddScoped<ICommentRepository, CommentRepository>();
+        services.AddScoped<IPostReactionRepository, PostReactionRepository>();
 
         services.AddSingleton<LocalImageFileStorage>();
         services.AddSingleton<IImageFileStorage>(provider => provider.GetRequiredService<LocalImageFileStorage>());

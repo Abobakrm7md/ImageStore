@@ -26,25 +26,6 @@
   margin-bottom: 1rem;
 }
 
-.progress-track {
-  height: 3px;
-  margin-bottom: 1rem;
-  border-radius: 3px;
-  background: transparent;
-  overflow: hidden;
-  position: relative;
-}
-
-.progress-track.active::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  width: 40%;
-  background: var(--color-primary);
-  border-radius: 3px;
-  animation: indeterminate 1.1s ease-in-out infinite;
-}
-
 .image-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(min(15rem, 100%), 1fr));
@@ -57,34 +38,6 @@
 
 .image-grid.dimmed {
   opacity: 0.6;
-}
-
-.skeleton-card {
-  padding: 0 0 1rem;
-  overflow: hidden;
-}
-
-.skeleton-thumb {
-  aspect-ratio: 4 / 3;
-  margin-bottom: 1rem;
-}
-
-.skeleton-line {
-  height: 0.9rem;
-  margin: 0.5rem 1rem;
-}
-
-.skeleton-line.short {
-  width: 45%;
-}
-
-@keyframes indeterminate {
-  from {
-    transform: translateX(-100%);
-  }
-  to {
-    transform: translateX(250%);
-  }
 }
 
 @media (max-width: 480px) {

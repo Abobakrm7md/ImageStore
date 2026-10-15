@@ -8,7 +8,7 @@ namespace ImageStore.Infrastructure.Persistence;
 
 internal sealed class ImageRepository(ImageStoreDbContext dbContext) : IImageRepository
 {
-    private const string LikeEscapeCharacter = "\\";
+    internal const string LikeEscapeCharacter = "\\";
     private const int MaxTagCreationAttempts = 3;
 
     public Task<Image?> GetOwnedAsync(Guid ownerUserId, Guid imageId, CancellationToken cancellationToken) =>

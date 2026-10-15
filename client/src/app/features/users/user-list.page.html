@@ -1,0 +1,57 @@
+<section class="page user-list-page">
+  <header class="page-head">
+    <h1>{{ heading() }}</h1>
+  </header>
+
+  @if (isNotFound(list.error())) {
+    <app-empty-state heading="User not found" message="This account does not exist." icon="compass" />
+  } @else if (list.error()) {
+    <app-empty-state
+      heading="Couldn't load the list"
+      message="Check your connection and try again."
+      icon="alert"
+      tone="error"
+    >
+      <button type="button" class="btn btn-primary" (click)="list.reload()">Try again</button>
+    </app-empty-state>
+  } @else if (list.hasValue()) {
+    @let result = list.value();
+    @if (result.items.length === 0) {
+      <app-empty-state
+        [heading]="
+          kind() === 'following' ? 'Not following anyone yet' : 'No followers yet'
+        "
+        [message]="
+          kind() === 'following'
+            ? 'When this user follows people, they will be listed here.'
+            : 'When people follow this user, they will be listed here.'
+        "
+        icon="users"
+      />
+    } @else {
+      <div class="user-list" [class.dimmed]="list.isLoading()">
+        @for (user of result.items; track user.id) {
+          <app-user-row
+            [user]="user"
+            [currentUserId]="currentUserId()"
+            (changed)="onFollowChanged(user, $event)"
+          />
+        }
+      </div>
+      <app-pagination
+        [page]="result.page"
+        [totalPages]="result.totalPages"
+        (pageChange)="goToPage($event)"
+      />
+    }
+  } @else {
+    <div class="user-list" aria-busy="true" [attr.aria-label]="'Loading ' + heading().toLowerCase()">
+      @for (item of [0, 1, 2, 3, 4]; track item) {
+        <div class="user-row-skeleton card">
+          <div class="skeleton skeleton-avatar"></div>
+          <div class="skeleton skeleton-line"></div>
+        </div>
+      }
+    </div>
+  }
+</section>

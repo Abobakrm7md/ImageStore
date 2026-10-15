@@ -1,0 +1,108 @@
+.search-users-page {
+  max-width: 48rem;
+}
+
+.page-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.1rem;
+  flex-wrap: wrap;
+}
+
+.page-head h1 {
+  margin: 0;
+}
+
+.search-bar {
+  padding: 0.9rem 1rem;
+  margin-bottom: 1.1rem;
+}
+
+.search-field {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.search-input {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  flex: 1;
+  min-width: 12rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+}
+
+.search-input:focus-within {
+  border-color: var(--color-primary);
+}
+
+.search-input input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: var(--color-text);
+  font: inherit;
+}
+
+.search-field .field-error {
+  margin: 0;
+}
+
+.search-clear {
+  border: none;
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  padding: 0.3rem;
+  border-radius: var(--radius-sm);
+  display: inline-flex;
+}
+
+.search-clear:hover {
+  color: var(--color-text);
+  background: var(--color-surface-muted);
+}
+
+.result-count {
+  margin: 0 0 0.7rem;
+}
+
+.user-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  margin-bottom: 1rem;
+  transition: opacity 0.2s ease;
+}
+
+.user-list.dimmed {
+  opacity: 0.55;
+}
+
+.user-row-skeleton {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.8rem 1rem;
+}
+
+.user-row-skeleton .skeleton-avatar {
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 50%;
+  flex: none;
+}
+
+.user-row-skeleton .skeleton-line {
+  flex: 1;
+}

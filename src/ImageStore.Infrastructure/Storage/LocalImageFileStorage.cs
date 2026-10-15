@@ -6,7 +6,8 @@ using Microsoft.Extensions.Options;
 namespace ImageStore.Infrastructure.Storage;
 
 /// <summary>
-/// Stores images on the local file system under <c>{root}/{userId}/{imageId}.{ext}</c>.
+/// Stores images on the local file system under <c>{root}/{userId}/{imageId}.{ext}</c> and
+/// profile pictures under <c>{root}/profiles/{userId}.{ext}</c>.
 /// <list type="bullet">
 /// <item>Uploads are streamed into <c>{root}/.staging</c> and only moved into place (an atomic
 /// rename on the same volume) once complete and validated, so readers never see partial files.</item>
@@ -122,12 +123,12 @@ public sealed class LocalImageFileStorage : IImageFileStorage
     }
 
     /// <summary>
-    /// Validates a server-generated relative path and resolves it to an absolute path that is
-    /// guaranteed to be inside the storage root.
+    /// Validates a server-generated relative path (an image path or a profile-picture path) and
+    /// resolves it to an absolute path that is guaranteed to be inside the storage root.
     /// </summary>
     internal string ResolveFullPath(string relativePath)
     {
-        if (!ImageStoragePaths.IsValidRelativePath(relativePath))
+        if (!ImageStoragePaths.IsValidRelativePath(relativePath) && !ProfilePictureStoragePaths.IsValidRelativePath(relativePath))
         {
             throw new InvalidStoragePathException("The storage path is not valid.");
         }

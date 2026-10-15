@@ -66,9 +66,15 @@
   background: var(--color-primary-soft);
 }
 
+.user-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-left: 0.75rem;
+  max-width: 16rem;
+}
+
 .user-email {
-  max-width: 14rem;
-  margin: 0 0.5rem 0 1rem;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -118,9 +124,9 @@
     display: flex;
   }
 
-  .user-email {
+  .user-chip {
     max-width: none;
-    margin: 0.5rem 0.75rem;
+    margin: 0.5rem 0;
   }
 
   .app-main {

@@ -96,13 +96,47 @@ dotnet ef migrations bundle --self-contained -r linux-x64 -o artifacts/efbundle 
 
 - The process must be able to create directories and files under `Storage__RootPath`; nothing
   else should be able to write there. The application creates directories `0750` and files
-  `0640` on Unix.
+  `0640` on Unix. The root holds uploaded images (`{ownerUserId}/{imageId}.ext`), profile
+  pictures (`profiles/{userId}.ext`) and the temporary `.staging/` directory.
+- Only **relative** paths are stored in the database, so the root can live anywhere the process
+  can reach – nothing is tied to a machine-specific absolute path.
 - **Back up the database and the storage directory together** (same point in time, or the
-  database first followed by the files). After restoring an older database, files uploaded later
-  become "orphans": they are reported by the storage maintenance job and are only deleted
-  automatically if you enable `StorageMaintenance__DeleteOrphanedFiles=true`.
+  database first followed by the files). The storage directory deserves its *own* backup job
+  (e.g. nightly `rsync`/snapshot of `Storage__RootPath` to a different disk or object storage)
+  because database backups alone never contain the image bytes. After restoring an older
+  database, files uploaded later become "orphans": they are reported by the storage maintenance
+  job and are only deleted automatically if you enable `StorageMaintenance__DeleteOrphanedFiles=true`.
+- Durability follows the platform: redeployments that replace the app directory do not touch the
+  storage root, but ephemeral disks or container filesystems *do* lose files – mount a volume
+  (see Docker below) and verify a restore before claiming durability.
 - Monitor the logs for `orphaned` and `missing from storage` messages and use `/health` for
   liveness/readiness probes.
+
+### Moving files between storage roots
+
+Because the database stores only relative paths, moving to a new root (bigger disk, new machine,
+volume) is a copy operation, not a data migration:
+
+1. Stop the API (or accept a short read-only window); note that in-flight uploads land in
+   `.staging/` and are cleaned up automatically.
+2. Copy the **entire** tree, preserving structure:
+   `rsync -a /old/root/ /new/root/` (trailing slashes matter).
+3. Point `Storage__RootPath` at the new root and start the API; verify `/health`, a gallery page
+   and one profile picture.
+4. Keep the old root until the next successful backup of the new one, then remove it.
+
+No database change is needed at any point – rows never reference the absolute root.
+
+### Deletions and what remains on disk
+
+- **Deleting a post** removes the post row and cascades its comments and reactions, but the
+  image (row *and* file) stays in the owner's library; it can be published again.
+- **Deleting an image** removes its post (with comments/reactions) via cascade, deletes the
+  database row first and then the file; a failed file delete leaves a reported orphan.
+- **Removing a profile picture** deletes the file under `profiles/` after the database commit.
+- **Deleting an account** is blocked (foreign keys are `Restrict`) while the user still owns
+  posts, comments or reactions – remove that content first; the profile, follows and profile
+  picture then cascade with the account.
 
 ### Docker (optional)
 

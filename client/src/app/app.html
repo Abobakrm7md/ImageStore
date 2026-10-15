@@ -2,7 +2,7 @@
 
 <header class="app-header">
   <div class="header-inner">
-    <a class="brand" [routerLink]="auth.isAuthenticated() ? '/images' : '/login'">
+    <a class="brand" [routerLink]="auth.isAuthenticated() ? '/feed' : '/login'">
       <app-icon class="brand-mark" name="logo" [size]="26" />
       <span>ImageStore</span>
     </a>
@@ -20,13 +20,28 @@
       </button>
       <nav id="main-nav" class="main-nav" [class.open]="menuOpen()" aria-label="Main">
         <a
+          routerLink="/feed"
+          routerLinkActive="active"
+          [routerLinkActiveOptions]="{ exact: true }"
+          >Feed</a
+        >
+        <a
+          routerLink="/users"
+          routerLinkActive="active"
+          [routerLinkActiveOptions]="{ exact: true }"
+          >People</a
+        >
+        <a
           routerLink="/images"
           routerLinkActive="active"
           [routerLinkActiveOptions]="{ exact: true }"
           >Gallery</a
         >
         <a routerLink="/images/upload" routerLinkActive="active">Upload</a>
-        <span class="user-email" [title]="user.email">{{ user.email }}</span>
+        <a class="user-chip" [routerLink]="['/users', user.id]" [title]="user.email">
+          <app-icon name="user" [size]="16" />
+          <span class="user-email">{{ user.email }}</span>
+        </a>
         <button type="button" class="btn btn-ghost btn-sm" (click)="logout()">Sign out</button>
       </nav>
     } @else {

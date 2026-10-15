@@ -88,3 +88,94 @@ export interface ProblemDetails {
   code?: string;
   errors?: Record<string, string[]>;
 }
+
+/* ---------------------------------------------------------------------------
+ * Social platform: profiles, following, posts, comments and reactions.
+ * ------------------------------------------------------------------------ */
+
+/** Stable reaction identifiers (camelCase names of the server enum). */
+export type ReactionType = 'like' | 'love' | 'laugh' | 'wow' | 'sad' | 'dislike';
+
+/** A user as rendered in lists (search results, followers, following, post authors). */
+export interface UserSummary {
+  id: string;
+  userName: string;
+  displayName: string;
+  hasProfilePicture: boolean;
+  /** Whether the signed-in user follows this user (viewer-relative). */
+  isFollowing?: boolean;
+}
+
+/** A full user profile. */
+export interface UserProfile extends UserSummary {
+  bio: string | null;
+  followerCount: number;
+  followingCount: number;
+  postCount: number;
+  isFollowing: boolean;
+  isCurrentUser: boolean;
+  createdAtUtc: string;
+}
+
+export interface UpdateMyProfileRequest {
+  displayName: string;
+  bio: string | null;
+}
+
+/** The published image of a post; bytes come from `/api/posts/{id}/content`. */
+export interface PostImage {
+  imageId: string;
+  contentType: string;
+  width: number | null;
+  height: number | null;
+}
+
+export interface ReactionCount {
+  reaction: ReactionType;
+  count: number;
+}
+
+/** An image post with everything needed to render a feed card. */
+export interface ImagePost {
+  id: string;
+  title: string;
+  description: string | null;
+  createdAtUtc: string;
+  updatedAtUtc: string | null;
+  author: UserSummary;
+  image: PostImage;
+  commentCount: number;
+  reactionCount: number;
+  /** One entry per known reaction type, zero counts included. */
+  reactionCounts: ReactionCount[];
+  myReaction: ReactionType | null;
+  isMine: boolean;
+}
+
+export interface CreatePostRequest {
+  imageId: string;
+  title?: string | null;
+  description?: string | null;
+}
+
+export interface UpdatePostRequest {
+  title: string;
+  description: string | null;
+}
+
+export interface CommentDto {
+  id: string;
+  postId: string;
+  author: UserSummary;
+  content: string;
+  createdAtUtc: string;
+  updatedAtUtc: string | null;
+  isMine: boolean;
+  canDelete: boolean;
+}
+
+export interface ReactionSummary {
+  totalCount: number;
+  counts: ReactionCount[];
+  myReaction: ReactionType | null;
+}

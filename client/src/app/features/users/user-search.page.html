@@ -1,0 +1,89 @@
+<section class="page search-users-page">
+  <header class="page-head">
+    <h1>People</h1>
+  </header>
+
+  <form class="search-bar card" (ngSubmit)="submitSearch()">
+    <div class="search-field">
+      <label class="visually-hidden" for="user-search">Search people</label>
+      <div class="search-input">
+        <app-icon name="compass" [size]="16" />
+        <input
+          id="user-search"
+          type="search"
+          placeholder="Search by name or @username…"
+          autocomplete="off"
+          [formControl]="searchControl"
+        />
+      </div>
+      @if (searchControl.invalid) {
+        <app-field-error [control]="searchControl" [label]="'Search'" />
+      }
+      @if (term()) {
+        <button type="button" class="search-clear" (click)="clearSearch()" aria-label="Clear search">
+          <app-icon name="close" [size]="16" />
+        </button>
+      }
+    </div>
+  </form>
+
+  @if (error() && error()?.status !== 400) {
+    <app-empty-state
+      heading="Couldn't search right now"
+      message="Check your connection and try again."
+      icon="alert"
+      tone="error"
+    >
+      <button type="button" class="btn btn-primary" (click)="results.reload()">Try again</button>
+    </app-empty-state>
+  } @else if (invalid()) {
+    <app-empty-state
+      heading="Search term is too long"
+      message="Use at most 100 characters."
+      icon="alert"
+    />
+  } @else if (results.hasValue()) {
+    @let result = results.value();
+    @if (result.items.length === 0 && term()) {
+      <app-empty-state
+        heading="No people found"
+        [message]="'Nothing matches “' + term() + '”. Try a different name or username.'"
+        icon="compass"
+      />
+    } @else if (result.items.length === 0) {
+      <app-empty-state
+        heading="Find people to follow"
+        message="Search by display name or @username — everyone you follow gets their posts into your feed."
+        icon="users"
+      />
+    } @else {
+      <p class="result-count muted" role="status">
+        {{ result.totalCount }} {{ result.totalCount === 1 ? 'person' : 'people' }}
+        @if (term()) { matching “{{ term() }}” }
+      </p>
+      <div class="user-list" [class.dimmed]="results.isLoading()">
+        @for (user of result.items; track user.id) {
+          <app-user-row
+            [user]="user"
+            [currentUserId]="currentUserId()"
+            (changed)="onFollowChanged(user, $event)"
+          />
+        }
+      </div>
+      <app-pagination
+        [page]="result.page"
+        [totalPages]="result.totalPages"
+        (pageChange)="goToPage($event)"
+      />
+    }
+  } @else {
+    <div class="user-list" aria-busy="true" aria-label="Loading people">
+      @for (item of [0, 1, 2, 3, 4]; track item) {
+        <div class="user-row-skeleton card">
+          <div class="skeleton skeleton-avatar"></div>
+          <div class="skeleton skeleton-line"></div>
+        </div>
+      }
+    </div>
+  }
+</section>

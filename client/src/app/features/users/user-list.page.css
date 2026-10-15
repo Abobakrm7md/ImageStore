@@ -1,0 +1,46 @@
+.user-list-page {
+  max-width: 48rem;
+}
+
+.page-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.1rem;
+  flex-wrap: wrap;
+}
+
+.page-head h1 {
+  margin: 0;
+}
+
+.user-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  margin-bottom: 1rem;
+  transition: opacity 0.2s ease;
+}
+
+.user-list.dimmed {
+  opacity: 0.55;
+}
+
+.user-row-skeleton {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.8rem 1rem;
+}
+
+.user-row-skeleton .skeleton-avatar {
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 50%;
+  flex: none;
+}
+
+.user-row-skeleton .skeleton-line {
+  flex: 1;
+}

@@ -1,4 +1,6 @@
 using ImageStore.Domain.Images;
+using ImageStore.Domain.Posts;
+using ImageStore.Domain.Social;
 using ImageStore.Infrastructure.Identity;
 using ImageStore.Infrastructure.Persistence.Converters;
 using Microsoft.AspNetCore.Identity;
@@ -13,6 +15,16 @@ public sealed class ImageStoreDbContext(DbContextOptions<ImageStoreDbContext> op
     public DbSet<Image> Images => Set<Image>();
 
     public DbSet<Tag> Tags => Set<Tag>();
+
+    public DbSet<UserProfile> UserProfiles => Set<UserProfile>();
+
+    public DbSet<UserFollow> UserFollows => Set<UserFollow>();
+
+    public DbSet<ImagePost> ImagePosts => Set<ImagePost>();
+
+    public DbSet<Comment> Comments => Set<Comment>();
+
+    public DbSet<PostReaction> PostReactions => Set<PostReaction>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {

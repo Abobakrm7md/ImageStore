@@ -12,10 +12,10 @@ ImageStore.Api ──► ImageStore.Application ──► ImageStore.Domain
 
 | Project            | Responsibility                                                                                                                                                                                                                                                         |
 | ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Domain**         | `Image` and `Tag` entities with their invariants (required title, length limits, UTC timestamps, tags owned by the image owner, max 20 unique tags). No framework references.                                                                                         |
-| **Application**    | Use cases (`ImageService`, `AuthService`), DTOs, request validation, file-signature inspection (`ImageFormatInspector`), file-name sanitizing, storage-path rules, and the ports it needs: `IImageRepository`, `IImageFileStorage`, `IIdentityService`, `ICurrentUser`. |
-| **Infrastructure** | EF Core `ImageStoreDbContext` (Identity + images/tags), entity configurations, migrations, `ImageRepository`, ASP.NET Core Identity adapter, `LocalImageFileStorage`, `StorageMaintenanceService`, health checks.                                                     |
-| **Api**            | Thin controllers, cookie authentication, anti-forgery, authorization policies, CORS, rate limiting, exception → Problem Details mapping, upload request limits, security headers, Swagger, static SPA hosting.                                                         |
+| **Domain**         | `Image`/`Tag` entities (required title, length limits, UTC timestamps, tags owned by the image owner, max 20 unique tags) plus the social model: `UserProfile`, `UserFollow`, `ImagePost`, `Comment`, `PostReaction` and the `ReactionType` enum, each with its invariants (see below). No framework references. |
+| **Application**    | Use cases (`ImageService`, `AuthService`, `SocialService`, `PostService`, `CommentService`, `ReactionService`), DTOs, request validation, file-signature inspection (`ImageFormatInspector`), file-name sanitizing, storage-path rules (incl. profile pictures), and the ports it needs: `IImageRepository`, `ISocialRepository`, `IPostRepository`, `ICommentRepository`, `IPostReactionRepository`, `IImageFileStorage`, `IIdentityService`, `ICurrentUser`. |
+| **Infrastructure** | EF Core `ImageStoreDbContext` (Identity + images/tags + social tables), entity configurations, migrations (`InitialCreate`, `AddSocialSharing`), repositories (`ImageRepository`, `SocialRepository`, `PostRepository`, `CommentRepository`, `PostReactionRepository`), ASP.NET Core Identity adapter (creates a `UserProfile` with a generated user name on registration), `LocalImageFileStorage`, `StorageMaintenanceService`, health checks. |
+| **Api**            | Thin controllers (`Auth`, `Images`, `Users`, `Feed`, `Posts`), cookie authentication, anti-forgery, authorization policies, CORS, rate limiting, exception → Problem Details mapping, upload request limits, security headers, Swagger, static SPA hosting. |
 
 Deliberate non-choices: no MediatR/CQRS, no generic repository, no AutoMapper, no validation
 library. The single repository exists because it adds value: it keeps EF Core out of the
@@ -58,13 +58,28 @@ out (`[AllowAnonymous]`).
 - A foreign image id produces exactly the same `404` Problem Details as a non-existent id – no
   metadata, file name or path is revealed.
 - Tags are private per user (unique `(OwnerUserId, NormalizedName)`).
+- **Post visibility:** an `ImagePost` and everything attached to it (image bytes via
+  `GET /api/posts/{id}/content` and `/download`, comments, reactions) is visible to **the author
+  and the author's followers only**. The check runs in the service layer on *every* request
+  (`author OR follower`), inside the database query where possible. Unfollowing therefore
+  revokes access immediately – feed, details, bytes, comments and reactions all answer `404`
+  afterwards. As with images, "not accessible" and "does not exist" produce the same `404`, so
+  existence is not leaked.
+- Profile *metadata* (name, picture, counts) is visible to every signed-in user; the published
+  post gallery (`GET /api/users/{id}/posts`) follows the stricter follower rule.
+- Comments may be edited by their author only, and deleted by their author **or the post author**
+  (moderation). Reactions are per-user rows; nobody can change another user's reaction.
+- Protected images are never served as static files – there is no public URL for post content,
+  image content or profile pictures.
 - Angular guards only improve UX; the API is the security boundary.
 
 ## File storage
 
 ```
 {Storage:RootPath}/
-├─ .staging/                       incoming uploads (never readable through the API)
+├─ .staging/                       incoming uploads and profile pictures (never readable through the API)
+├─ profiles/
+│  └─ {userId:D}.{jpg|png|webp|gif} profile pictures (server-generated names)
 └─ {ownerUserId}/
    └─ {imageId}.{jpg|png|webp}     final files (server-generated names)
 ```
@@ -79,6 +94,10 @@ out (`[AllowAnonymous]`).
   depth against a tampered database row – covered by integration tests).
 - The original file name is sanitized (directory parts, control and reserved characters removed,
   length-limited) and kept only as metadata, e.g. for `Content-Disposition` on download.
+- **Profile pictures** use the same staging → inspection → atomic-commit pipeline (JPEG, PNG,
+  WebP or GIF, ≤ 2 MiB, content verified). Replacing a picture deletes the old file only *after*
+  the database commit; `profiles/` paths are exempt from the orphan-file scan because their rows
+  live on `UserProfile`, not `Image`.
 
 ### Upload pipeline
 
@@ -131,6 +150,39 @@ index violation), the losing request discards its copies and reuses the existing
 tolerate duplicates as well. This was found and fixed through browser end-to-end testing and is
 covered by regression tests.
 
+## Social domain model
+
+Migration `AddSocialSharing` adds five tables; all timestamps are UTC and all foreign keys are
+explicit:
+
+| Table           | Key & constraints                                                                                                    | FK behaviour                                                                                     |
+| --------------- | -------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| `UserProfiles`  | PK `UserId` (= `AspNetUsers.Id`), unique index on `NormalizedUserName`                                                | `Cascade` from `AspNetUsers` – deleting the account removes the profile (pictures, follows).      |
+| `UserFollows`   | Composite PK `(FollowerUserId, FollowedUserId)` – duplicates impossible; self-follows are rejected by the domain entity and the service (`400`) | `Cascade` from `AspNetUsers` on both sides.                                                       |
+| `ImagePosts`    | PK `Id` (GUIDv7 – time-ordered), **unique** `ImageId` (one post per image), index `(AuthorUserId, CreatedAtUtc DESC)` | Author → `UserProfiles` **Restrict**; Image → `Images` **Cascade**.                                |
+| `Comments`      | PK `Id`, index `(PostId, CreatedAtUtc)`                                                                              | Post **Cascade**; author → `UserProfiles` **Restrict**.                                            |
+| `PostReactions` | PK `Id`; **unique index `(PostId, UserId)`** – DB-level one-reaction-per-user; `Reaction` stored as `int`              | Post **Cascade**; user → `AspNetUsers` **Restrict**.                                               |
+
+Design decisions:
+
+- **No redundant counters.** Follower/following/post/comment/reaction counts are computed with
+  indexed `COUNT` queries (or aggregated in the feed query). At this scale that is cheaper to
+  keep correct than denormalized columns; revisit only with measurements.
+- **Restrict on authorship** means an account cannot be deleted while it still owns posts,
+  comments or reactions – deliberate: content removal must be an explicit step (delete posts →
+  delete comments/reactions → delete account), so nobody's feed silently loses context. Profiles
+  and follows still cascade with the user.
+- **Deleting a post** cascades its comments and reactions but **keeps the image** (row and file)
+  in the author's library – it just becomes unpublished and can be posted again. **Deleting an
+  image** cascades its post, comments and reactions, then removes the file (the existing
+  delete-image flow). **Unfollowing** keeps the other side's content untouched; reactions and
+  comments an unfollowed user made on *your* posts are retained.
+- Reactions are a closed enum (`Like=1 … Dislike=6`) with stable wire names; adding a reaction
+  type is a code + migration change, never a client-side string.
+- `UserProfile.UserName` is generated at registration from the email local part (sanitized, with
+  `-2…-5` suffixes and a random fallback on collision) and is immutable afterwards; the display
+  name is free text.
+
 ## HTTP behaviour
 
 - **Problem Details** everywhere (validation errors use camelCase keys such as `title` or
@@ -150,8 +202,18 @@ covered by regression tests.
 - Standalone components, zoneless change detection, signals for state, `rxResource` for data
   loading, Reactive Forms (typed, non-nullable), functional guards and interceptors, lazy-loaded
   routes, `withComponentInputBinding()` for route parameters.
-- The gallery's state (page, search, sort, tag) lives in the URL, so reloads, deep links and the
-  back button work.
+- The gallery's, feed's and people-search state (page, search, sort, tag) lives in the URL, so
+  reloads, deep links and the back button work.
+- Routes: `/feed`, `/posts/new`, `/posts/:id`, `/users` (search), `/users/:id` (profile),
+  `/users/:id/followers`, `/users/:id/following`, `/account`, plus the existing `/images*`
+  gallery routes; all behind `authGuard`, with `/` redirecting to the feed.
+- Reusable social components in `shared/components`: `Avatar` (picture with initials fallback),
+  `FollowButton` (two-way `following` model + `changed` output, calls the API itself),
+  `ReactionBar` (quick toggle + six-reaction picker, emits the fresh summary), `PostCard` and
+  `UserRow`. Typed clients `SocialApiService`/`PostApiService` mirror the API contracts.
+- Mutations refresh data from the server response (or a targeted reload) instead of optimistic
+  guessing; the one exception is appending your own comment, which is reconciled by the resource
+  refresh afterwards.
 - Images are displayed with plain `<img src="/api/images/{id}/content">`; the session cookie
   authorizes the request. Upload previews use object URLs that are revoked when removed or when
   the page is destroyed.
@@ -164,7 +226,7 @@ covered by regression tests.
 
 | Level                     | What is covered                                                                                                                                                                                                                                   |
 | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Unit (xUnit)              | Domain invariants; signature inspection with real and crafted malicious/truncated files; file-name sanitizing; storage-path rules; local storage (staging, atomic commit, no overwrite, traversal attempts); `ImageService` incl. DB-failure compensation. |
-| Integration (xUnit)       | The real HTTP pipeline via `WebApplicationFactory`: registration/login/logout, cookie flags, CSRF enforcement and user binding, 401 for every protected endpoint, uploads of all formats, invalid/oversized/malicious uploads, 413, cross-user access, pagination/search/sort/tag filter, edits, deletion, tampered storage paths, Problem Details, security headers, Swagger, health, migrations-vs-model, SQL translation, maintenance, concurrent tag creation. |
-| Frontend (Vitest)         | Utilities and validators, Problem Details parsing, auth service, guards, interceptor (401 redirect, CSRF refresh-and-retry), gallery URL state, pagination, upload queue (concurrency, progress, rejected vs failed).                              |
+| Unit (xUnit)              | Domain invariants (images **and** profiles/follows/posts/comments/reactions); signature inspection with real and crafted malicious/truncated files; file-name sanitizing; storage-path rules incl. profile pictures; local storage (staging, atomic commit, no overwrite, traversal attempts); `ImageService` incl. DB-failure compensation. |
+| Integration (xUnit)       | The real HTTP pipeline via `WebApplicationFactory`: registration/login/logout, cookie flags, CSRF enforcement and user binding, 401 for every protected endpoint, uploads of all formats, invalid/oversized/malicious uploads, 413, cross-user access, pagination/search/sort/tag filter, edits, deletion, tampered storage paths, Problem Details, security headers, Swagger, health, migrations-vs-model, SQL translation, maintenance, concurrent tag creation, **plus the social surface:** follow/unfollow (idempotency, self-follow, duplicates), feed filtering & deterministic pagination, access revocation after unfollowing (details/content/download/comments/reactions → 404), cross-user post edit/delete, comment authorization & moderation, reaction lifecycle & uniqueness (incl. repeated requests), profile pictures, storage persistence across host restarts. |
+| Frontend (Vitest)         | Utilities and validators (incl. reactions/initials), Problem Details parsing, auth service, guards, interceptor (401 redirect, CSRF refresh-and-retry), gallery URL state, pagination, upload queue (concurrency, progress, rejected vs failed), social/post API clients, `FollowButton` and `ReactionBar` behaviour (toggle, change, remove, error paths). |
 | Browser smoke test        | `e2e/smoke.mjs` drives Chrome through the complete user journey including mobile layout, and fails on console errors or 5xx responses.                                                                                                            |

@@ -1,0 +1,135 @@
+<section class="page new-post-page">
+  <header class="page-head">
+    <div>
+      <h1>New post</h1>
+      <p class="muted page-subtitle">
+        Pick one of your images, add a title, and share it with your followers.
+      </p>
+    </div>
+    <a class="btn btn-ghost" routerLink="/images">
+      <app-icon name="arrow-left" [size]="16" /> Back to gallery
+    </a>
+  </header>
+
+  @if (library.error()) {
+    <app-empty-state
+      heading="Couldn't load your images"
+      message="Check your connection and try again."
+      icon="alert"
+      tone="error"
+    >
+      <button type="button" class="btn btn-primary" (click)="library.reload()">Try again</button>
+    </app-empty-state>
+  } @else if (library.hasValue() && library.value().items.length === 0) {
+    <app-empty-state
+      heading="No images yet"
+      message="Upload an image to your library first — every post is built on one of your images."
+      icon="image"
+    >
+      <a class="btn btn-primary" routerLink="/upload">Upload images</a>
+    </app-empty-state>
+  } @else if (library.hasValue()) {
+    @let result = library.value();
+    <section class="picker" aria-labelledby="picker-title">
+      <h2 id="picker-title" class="picker-title">
+        1 · Choose an image
+        @if (selected(); as image) {
+          <span class="picker-selected muted">“{{ image.title }}” selected</span>
+        }
+      </h2>
+
+      <div class="picker-grid" [class.dimmed]="library.isLoading()">
+        @for (image of result.items; track image.id) {
+          <button
+            type="button"
+            class="picker-cell"
+            [class.selected]="selectedId() === image.id"
+            [attr.aria-pressed]="selectedId() === image.id"
+            [title]="image.title"
+            (click)="select(image.id)"
+          >
+            <img
+              [src]="images.contentUrl(image.id)"
+              [alt]="image.title"
+              loading="lazy"
+              decoding="async"
+            />
+            @if (selectedId() === image.id) {
+              <span class="picker-check" aria-hidden="true">
+                <app-icon name="check" [size]="16" />
+              </span>
+            }
+          </button>
+        }
+      </div>
+
+      <app-pagination
+        [page]="result.page"
+        [totalPages]="result.totalPages"
+        (pageChange)="goToPage($event)"
+      />
+    </section>
+
+    <form class="card post-form" [formGroup]="form" (ngSubmit)="submit()" aria-labelledby="details-title">
+      <h2 id="details-title" class="picker-title">2 · Post details</h2>
+
+      @if (!selected()) {
+        <p class="muted form-hint">Choose an image above to continue.</p>
+      }
+
+      <div class="form-field">
+        <label for="post-title">Title <span class="muted">(optional — defaults to the image title)</span></label>
+        <input
+          id="post-title"
+          type="text"
+          formControlName="title"
+          [disabled]="!selected()"
+          maxlength="200"
+          placeholder="Give your post a title"
+        />
+        @if (form.controls.title.invalid) {
+          <app-field-error [control]="form.controls.title" label="Title" />
+        }
+      </div>
+
+      <div class="form-field">
+        <label for="post-description">Description <span class="muted">(optional)</span></label>
+        <textarea
+          id="post-description"
+          rows="4"
+          formControlName="description"
+          [disabled]="!selected()"
+          maxlength="2000"
+          placeholder="Say something about this image…"
+        ></textarea>
+        @if (form.controls.description.invalid) {
+          <app-field-error [control]="form.controls.description" label="Description" />
+        }
+      </div>
+
+      @if (submitError(); as error) {
+        <p class="field-error submit-error" role="alert">{{ error }}</p>
+      }
+
+      <div class="post-form-actions">
+        @if (pending()) {
+          <div class="progress-track progress-inline" role="progressbar" aria-label="Publishing post"></div>
+        }
+        <button type="submit" class="btn btn-primary" [disabled]="!selected() || pending()">
+          <app-icon name="send" [size]="16" />
+          {{ pending() ? 'Publishing…' : 'Publish post' }}
+        </button>
+      </div>
+    </form>
+  } @else {
+    <div class="picker" aria-busy="true" aria-label="Loading images">
+      <div class="picker-grid">
+        @for (item of [0, 1, 2, 3, 4, 5]; track item) {
+          <div class="picker-cell skeleton-cell">
+            <div class="skeleton skeleton-thumb"></div>
+          </div>
+        }
+      </div>
+    </div>
+  }
+</section>

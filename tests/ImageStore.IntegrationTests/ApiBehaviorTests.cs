@@ -44,7 +44,16 @@ public sealed class ApiBehaviorTests(ImageStoreApiFactory factory) : IClassFixtu
         using var document = JsonDocument.Parse(await client.Http.GetStringAsync(new Uri("/swagger/v1/swagger.json", UriKind.Relative)));
 
         var paths = document.RootElement.GetProperty("paths");
-        foreach (var path in new[] { "/api/auth/register", "/api/auth/login", "/api/auth/logout", "/api/auth/me", "/api/images", "/api/images/{id}", "/api/images/{id}/content", "/api/images/{id}/download" })
+        foreach (var path in new[]
+        {
+            "/api/auth/register", "/api/auth/login", "/api/auth/logout", "/api/auth/me",
+            "/api/images", "/api/images/{id}", "/api/images/{id}/content", "/api/images/{id}/download",
+            "/api/users", "/api/users/me", "/api/users/{userId}", "/api/users/{userId}/posts",
+            "/api/users/{userId}/follow", "/api/users/{userId}/followers", "/api/users/{userId}/following",
+            "/api/users/{userId}/profile-picture", "/api/feed", "/api/posts", "/api/posts/{postId}",
+            "/api/posts/{postId}/content", "/api/posts/{postId}/download", "/api/posts/{postId}/comments",
+            "/api/posts/{postId}/reactions", "/api/posts/{postId}/my-reaction",
+        })
         {
             Assert.True(paths.TryGetProperty(path, out _), $"Missing {path}");
         }

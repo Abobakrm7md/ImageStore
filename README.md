@@ -1,9 +1,12 @@
 # ImageStore
 
-A private image library: users register, sign in, and upload, browse, search, edit, download and
-delete **their own** images. Image binaries live on the local file system; metadata lives in
-SQL Server. Every request is authorized on the server and every query is scoped to the signed-in
-user.
+A small social image-sharing platform: users register, sign in, and upload, browse, search, edit,
+download and delete **their own** images — then publish selected images as **posts**, follow other
+people, and see a chronological **feed** of posts from the people they follow, with **comments**
+and **reactions**. Image binaries live on the local file system; metadata lives in SQL Server.
+Every request is authorized on the server: posts (including their image bytes, comments and
+reactions) are visible only to the author and the author's followers, and unfollowing revokes
+access immediately.
 
 | Layer    | Technology                                                                                       |
 | -------- | ------------------------------------------------------------------------------------------------ |
@@ -34,6 +37,19 @@ More detail: [docs/architecture.md](docs/architecture.md) (design and security d
 - **Validation you can trust:** the server verifies JPEG/PNG/WebP **file signatures and header
   structure** (never the client's `Content-Type` or extension alone), enforces size and pixel
   limits, and rejects mismatches such as PNG content named `.jpg`.
+- **Profiles & following:** generated user name, editable display name/bio, profile picture
+  (uploaded, content-verified, served only through an authorized endpoint), follower/following
+  counts and lists, people search, one-click follow/unfollow (idempotent, no self-follow).
+- **Posts & feed:** publish any of your images as a post (title/description, edit/delete your own
+  posts only); the feed is a strictly chronological, server-side paginated stream of posts from
+  the people you follow — no ranking, no duplicates across pages. Unfollowing removes their posts
+  from the feed *and* revokes access to post details, image bytes, comments and reactions (404).
+- **Comments:** paginated, oldest first; authors edit/delete their own comments; post owners may
+  additionally delete (moderate) any comment on their posts; empty/whitespace comments and
+  oversized content are rejected.
+- **Reactions:** Like · Love · Laugh · Wow · Sad · Dislike as a stable enum; exactly one active
+  reaction per user and post (unique index), add/change/remove is idempotent and safe under
+  concurrency; totals and per-type counts are computed, never denormalized.
 
 ## Repository layout
 
@@ -45,17 +61,20 @@ ImageStore/
 ├─ global.json                     .NET SDK 10.0.x (roll forward to the latest feature band)
 ├─ .config/dotnet-tools.json       Local tool manifest (dotnet-ef)
 ├─ src/
-│  ├─ ImageStore.Domain/           Entities and invariants (Image, Tag) – no dependencies
+│  ├─ ImageStore.Domain/           Entities and invariants (Image, Tag, UserProfile, UserFollow,
+│  │                               ImagePost, Comment, PostReaction, ReactionType) – no dependencies
 │  ├─ ImageStore.Application/      Use cases, DTOs, validation, file-signature inspection,
 │  │                               repository/storage interfaces, ownership-scoped services
-│  ├─ ImageStore.Infrastructure/   EF Core DbContext + configurations + migrations, Identity,
-│  │                               repository, local file storage, storage maintenance, health checks
+│  ├─ ImageStore.Infrastructure/   EF Core DbContext + configurations + migrations (incl. social
+│  │                               tables), Identity (profile creation on registration), repositories,
+│  │                               local file storage (images + profile pictures), maintenance, health
 │  └─ ImageStore.Api/              Controllers, auth/CSRF/CORS/rate limiting, Problem Details,
 │                                  upload limits, security headers, Swagger, composition root
 ├─ tests/
 │  ├─ ImageStore.UnitTests/        Domain, validation, file inspection, storage, ImageService
 │  ├─ ImageStore.IntegrationTests/ Full HTTP pipeline (auth, CSRF, ownership, uploads, storage
-│  │                               security, persistence/SQL translation, maintenance)
+│  │                               security, persistence/SQL translation, maintenance, following,
+│  │                               feed, posts, comments, reactions, access revocation)
 │  └─ TestData/                    Real sample JPEG/PNG/WebP files used by the tests
 ├─ client/                         Angular application
 ├─ e2e/                            Optional browser smoke test of the whole stack (Puppeteer)
@@ -121,7 +140,7 @@ Database__Provider=InMemory dotnet run --project src/ImageStore.Api --launch-pro
 
 ## Database and migrations
 
-Schema (created by the `InitialCreate` migration in
+Schema (created by the `InitialCreate` and `AddSocialSharing` migrations in
 `src/ImageStore.Infrastructure/Persistence/Migrations`):
 
 | Table                                       | Purpose / notable columns                                                                                                                                                                                                                                                                     |
@@ -130,11 +149,18 @@ Schema (created by the `InitialCreate` migration in
 | `Tags`                                      | `Id` · `OwnerUserId` (FK, *no action*) · `Name` nvarchar(50) · `NormalizedName` nvarchar(50) — **unique (OwnerUserId, NormalizedName)**: tags are private per user                                                                                                                              |
 | `ImageTags`                                 | `ImageId` + `TagId` (composite PK, both cascade), index on `TagId`                                                                                                                                                                                                                              |
 | `AspNetUsers`, `AspNetRoles`, …             | ASP.NET Core Identity (GUID keys); `AspNetUsers.CreatedAtUtc` added                                                                                                                                                                                                                              |
+| `UserProfiles`                              | `UserId` (PK = `AspNetUsers.Id`, cascade) · `UserName` nvarchar(30) · `NormalizedUserName` varchar(30) **unique** · `DisplayName` nvarchar(100) · `Bio` nvarchar(500) null · `ProfilePicturePath`/`ProfilePictureContentType` null · `CreatedAtUtc`/`UpdatedAtUtc`                                |
+| `UserFollows`                               | Composite PK `(FollowerUserId, FollowedUserId)` (both FK → AspNetUsers, cascade) · `CreatedAtUtc` — duplicates impossible; index on `FollowedUserId` for follower lists                                                                                                                           |
+| `ImagePosts`                                | `Id` (uniqueidentifier PK, GUIDv7) · `AuthorUserId` (FK → UserProfiles, *restrict*) · `ImageId` (FK → Images, cascade) **unique** — one post per image · `Title` nvarchar(200) · `Description` nvarchar(2000) null · `CreatedAtUtc`/`UpdatedAtUtc`; indexes `(AuthorUserId, CreatedAtUtc)` and `CreatedAtUtc` |
+| `Comments`                                  | `Id` PK · `PostId` (FK → ImagePosts, cascade) · `AuthorUserId` (FK → UserProfiles, *restrict*) · `Content` nvarchar(2000) · `CreatedAtUtc`/`UpdatedAtUtc`; index `(PostId, CreatedAtUtc)`                                                                                                         |
+| `PostReactions`                             | `Id` PK · `PostId` (FK → ImagePosts, cascade) · `UserId` (FK → AspNetUsers, *restrict*) · `Reaction` int (enum: 1=like … 6=dislike) · `CreatedAtUtc`/`UpdatedAtUtc` — **unique `(PostId, UserId)`**: one active reaction per user and post                                                        |
 
 Indexes for the owner-scoped queries: `IX_Images_OwnerUserId_CreatedAtUtc` (default gallery
-order), `IX_Images_OwnerUserId_Title` (title sort). All timestamps are UTC and are read back with
-`DateTimeKind.Utc`. The database stores only the relative path (`{userId}/{imageId}.{ext}`),
-never image bytes or absolute paths.
+order), `IX_Images_OwnerUserId_Title` (title sort). Counts (followers, comments, reactions) are
+**not** denormalized – they are computed with indexed queries. All timestamps are UTC and are read
+back with `DateTimeKind.Utc`. The database stores only relative paths (`{userId}/{imageId}.{ext}`,
+`profiles/{userId}.{ext}`), never image bytes or absolute paths. `AddSocialSharing` also backfills
+a `UserProfiles` row for every pre-existing account.
 
 ```bash
 dotnet tool restore                      # installs dotnet-ef from .config/dotnet-tools.json
@@ -200,9 +226,36 @@ requests (POST/PUT/DELETE) require the `X-XSRF-TOKEN` header – see [docs/api.m
 | GET    | `/api/images/{id}/content`   | ✔    | Image bytes, `inline`, ETag/304, range requests                         |
 | GET    | `/api/images/{id}/download`  | ✔    | Image bytes as an attachment with the original file name                |
 | GET    | `/api/images/upload-policy`  | ✔    | Upload limits for client-side pre-checks                                |
+| GET    | `/api/users`                 | ✔    | Search profiles (`search`, `page`, `pageSize`)                          |
+| GET    | `/api/users/me`              | ✔    | Own profile (counts, flags)                                             |
+| PUT    | `/api/users/me`              | ✔    | Update display name / bio                                               |
+| PUT    | `/api/users/me/profile-picture` | ✔ | Upload/replace profile picture (multipart `file`, ≤ 2 MiB)             |
+| DELETE | `/api/users/me/profile-picture` | ✔ | Remove profile picture (204)                                          |
+| GET    | `/api/users/{id}`            | ✔    | Public profile of any user                                              |
+| GET    | `/api/users/{id}/profile-picture` | ✔ | Picture bytes (ETag/304, 404 when none)                             |
+| GET    | `/api/users/{id}/posts`      | ✔    | Published posts – **only for the user and their followers** (else 404)  |
+| POST   | `/api/users/{id}/follow`     | ✔    | Follow (204, idempotent; 400 self-follow; 404 unknown user)             |
+| DELETE | `/api/users/{id}/follow`     | ✔    | Unfollow (204, idempotent) – revokes access to their posts              |
+| GET    | `/api/users/{id}/followers`  | ✔    | Paginated follower list                                                 |
+| GET    | `/api/users/{id}/following`  | ✔    | Paginated following list                                                |
+| GET    | `/api/feed`                  | ✔    | Chronological feed of followed users' posts (`page`, `pageSize` ≤ 100)  |
+| POST   | `/api/posts`                 | ✔    | Publish one of your images (201; 409 if already published)              |
+| GET    | `/api/posts/{id}`            | ✔    | Post details (author + followers, else 404)                             |
+| PUT    | `/api/posts/{id}`            | ✔    | Edit title/description (own posts only)                                 |
+| DELETE | `/api/posts/{id}`            | ✔    | Delete own post (204; comments/reactions cascade, image stays)          |
+| GET    | `/api/posts/{id}/content`    | ✔    | Post image bytes, `inline`, ETag/304, ranges (author + followers)       |
+| GET    | `/api/posts/{id}/download`   | ✔    | Post image bytes as an attachment (author + followers)                  |
+| GET    | `/api/posts/{id}/comments`   | ✔    | Paginated comments, oldest first                                        |
+| POST   | `/api/posts/{id}/comments`   | ✔    | Add a comment (201)                                                     |
+| PUT    | `/api/posts/{id}/comments/{commentId}` | ✔ | Edit own comment                                            |
+| DELETE | `/api/posts/{id}/comments/{commentId}` | ✔ | Delete own comment – or any comment on your own post (moderation) |
+| GET    | `/api/posts/{id}/reactions`  | ✔    | Reaction summary (total, per type, own reaction)                        |
+| PUT    | `/api/posts/{id}/my-reaction`| ✔    | Set/change your reaction (one per user + post)                          |
+| DELETE | `/api/posts/{id}/my-reaction`| ✔    | Remove your reaction (204, idempotent)                                  |
 | GET    | `/health`                    | –    | Database and storage health (`Healthy`/`Unhealthy`)                      |
 
-Another user's image always yields the same `404` as a non-existent one.
+Another user's image always yields the same `404` as a non-existent one – and so does any post
+you may not see (not authored, not following).
 
 ## Tests
 
@@ -211,14 +264,19 @@ dotnet test ImageStore.slnx            # unit + integration tests (no SQL Server
 cd client && npm run test:ci           # Angular unit tests (Vitest + jsdom)
 ```
 
-Results of the last run in the build environment:
+Results of the last executed runs:
 
-| Suite                               | Result         |
-| ----------------------------------- | -------------- |
-| `ImageStore.UnitTests`              | 109 passed     |
-| `ImageStore.IntegrationTests`       | 91 passed      |
-| Angular unit tests (Vitest)         | 41 passed      |
-| Browser smoke test (`e2e/`)         | 20/20 checks   |
+| Suite                               | Result                                                                  |
+| ----------------------------------- | ------------------------------------------------------------------------ |
+| Angular unit tests (Vitest)         | **58 passed** (incl. social/post API clients, FollowButton, ReactionBar)  |
+| Angular production build            | **passes** with zero errors/warnings                                      |
+| `ImageStore.UnitTests`              | 109 passed *before the social extension*; extended by profile, follow, post, comment, reaction and profile-picture unit tests |
+| `ImageStore.IntegrationTests`       | 91 passed *before the social extension*; extended by following, feed, post, comment, reaction, social-persistence and storage-persistence suites |
+| Browser smoke test (`e2e/`)         | 20/20 checks *before the social extension* (landing is now the feed)      |
+
+> **Note:** the .NET suites for the social features could not be *executed* in the environment
+> where they were written (no .NET SDK, no NuGet access). They follow the established, passing
+> patterns; run `dotnet test ImageStore.slnx` on a machine with the .NET 10 SDK to verify.
 
 Integration tests host the real API in memory with `WebApplicationFactory`, replace SQL Server
 with the EF Core in-memory provider, and give each test class its own temporary storage directory
@@ -250,8 +308,11 @@ stable .NET 10 releases; to adopt the latest servicing patch, bump the versions 
 - **Single server:** files are on local disk. Multiple instances need shared storage (and shared
   Data Protection keys).
 - **No optimistic concurrency** on metadata edits (last write wins).
-- **No account management** beyond register/login/logout (no email confirmation, password reset,
-  2FA or account deletion). User deletion is blocked by foreign keys until images are removed.
+- **No account management** beyond register/login/logout and profile editing (no email
+  confirmation, password reset, 2FA or self-service account deletion). User deletion is blocked
+  by foreign keys until the user's images, posts, comments and reactions are removed.
+- **Feed is chronological only** by design – no ranking/recommendation algorithms; there are no
+  notifications, hashtags or share/repost mechanics.
 - **EXIF orientation** is not applied when reporting dimensions (stored pixel dimensions are shown).
 - File/metadata consistency is best-effort across two systems; see
   [docs/architecture.md](docs/architecture.md#file-and-database-consistency) for the strategy and

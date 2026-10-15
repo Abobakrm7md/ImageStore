@@ -14,9 +14,9 @@ export const authGuard: CanActivateFn = (_route, state) => {
     : router.createUrlTree(['/login'], { queryParams: { returnUrl: state.url } });
 };
 
-/** Sends signed-in users from the login/register pages to their gallery. */
+/** Sends signed-in users from the login/register pages to their feed. */
 export const guestGuard: CanActivateFn = () => {
   const auth = inject(AuthService);
   const router = inject(Router);
-  return auth.isAuthenticated() ? router.createUrlTree(['/images']) : true;
+  return auth.isAuthenticated() ? router.createUrlTree(['/feed']) : true;
 };

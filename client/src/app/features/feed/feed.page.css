@@ -1,0 +1,15 @@
+.feed-page {
+  max-width: 46rem;
+}
+
+.post-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  transition: opacity 150ms ease;
+}
+
+.post-list.dimmed {
+  opacity: 0.55;
+  pointer-events: none;
+}

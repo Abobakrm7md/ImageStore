@@ -1,0 +1,93 @@
+.profile-page {
+  max-width: 52rem;
+}
+
+.profile-head {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  grid-template-areas:
+    'avatar identity actions'
+    'counts counts counts';
+  gap: 0.9rem 1.2rem;
+  align-items: center;
+  padding: 1.4rem 1.5rem 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.profile-head app-avatar {
+  grid-area: avatar;
+}
+
+.profile-identity {
+  grid-area: identity;
+  min-width: 0;
+}
+
+.profile-identity h1 {
+  margin: 0;
+  font-size: 1.45rem;
+  overflow-wrap: anywhere;
+}
+
+.profile-username {
+  margin: 0.1rem 0 0.45rem;
+}
+
+.profile-bio {
+  margin: 0 0 0.4rem;
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
+.profile-since {
+  margin: 0;
+  font-size: 0.83rem;
+}
+
+.profile-actions {
+  grid-area: actions;
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.profile-counts {
+  grid-area: counts;
+  display: flex;
+  gap: 1.4rem;
+  border-top: 1px solid var(--color-border);
+  padding-top: 0.8rem;
+}
+
+.profile-counts a,
+.profile-counts .count-static {
+  color: var(--color-text-muted);
+  text-decoration: none;
+  font-size: 0.92rem;
+}
+
+.profile-counts a:hover {
+  color: var(--color-primary);
+}
+
+.profile-counts strong {
+  color: var(--color-text);
+  margin-right: 0.25rem;
+}
+
+.section-title {
+  margin: 0 0 0.9rem;
+  font-size: 1.1rem;
+}
+
+.profile-post-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
+  gap: 1rem;
+  transition: opacity 0.2s ease;
+}
+
+.profile-post-grid.dimmed {
+  opacity: 0.55;
+}

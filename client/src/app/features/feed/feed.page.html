@@ -1,0 +1,69 @@
+<section class="page feed-page">
+  <header class="page-header">
+    <div>
+      <h1>Feed</h1>
+      <p class="muted" aria-live="polite">
+        @if (feed.hasValue()) {
+          {{ feed.value().totalCount }}
+          {{ feed.value().totalCount === 1 ? 'post' : 'posts' }} from people you follow
+        } @else {
+          &nbsp;
+        }
+      </p>
+    </div>
+    <a class="btn btn-secondary" routerLink="/users"><app-icon name="users" [size]="18" /> Find people</a>
+  </header>
+
+  <div class="progress-track" [class.active]="feed.isLoading()" aria-hidden="true"></div>
+
+  @if (feed.error()) {
+    <app-empty-state
+      heading="Couldn't load your feed"
+      message="Check your connection and try again."
+      icon="alert"
+      tone="error"
+    >
+      <button type="button" class="btn btn-primary" (click)="feed.reload()">Try again</button>
+    </app-empty-state>
+  } @else if (feed.hasValue()) {
+    @let result = feed.value();
+    @if (result.items.length === 0) {
+      @if (result.totalCount > 0) {
+        <app-empty-state heading="This page is empty" icon="compass">
+          <button type="button" class="btn btn-secondary" (click)="goToPage(1)">
+            Go to the first page
+          </button>
+        </app-empty-state>
+      } @else {
+        <app-empty-state
+          heading="Your feed is empty"
+          message="Follow other creators and their image posts will show up here."
+          icon="compass"
+        >
+          <a class="btn btn-primary" routerLink="/users">Find people to follow</a>
+        </app-empty-state>
+      }
+    } @else {
+      <div class="post-list" [class.dimmed]="feed.isLoading()">
+        @for (post of result.items; track post.id) {
+          <app-post-card [post]="post" />
+        }
+      </div>
+      <app-pagination
+        [page]="result.page"
+        [totalPages]="result.totalPages"
+        (pageChange)="goToPage($event)"
+      />
+    }
+  } @else {
+    <div class="post-list" aria-busy="true" aria-label="Loading feed">
+      @for (item of skeletons; track item) {
+        <div class="skeleton-card card">
+          <div class="skeleton skeleton-line"></div>
+          <div class="skeleton skeleton-thumb"></div>
+          <div class="skeleton skeleton-line short"></div>
+        </div>
+      }
+    </div>
+  }
+</section>
