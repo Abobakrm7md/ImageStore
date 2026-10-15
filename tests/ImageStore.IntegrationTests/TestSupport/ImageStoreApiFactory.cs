@@ -27,9 +27,13 @@ public class ImageStoreApiFactory : WebApplicationFactory<Program>
 
     public FailingSaveChangesInterceptor SaveChangesFailure { get; } = new();
 
+    /// <summary>Isolated web root, so tests never depend on a locally built SPA in src/ImageStore.Api/wwwroot.</summary>
+    public string WebRoot => Path.Combine(_testRoot, "wwwroot");
+
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment("Testing");
+        builder.UseWebRoot(WebRoot);
         builder.ConfigureAppConfiguration((_, configuration) => configuration.AddInMemoryCollection(new Dictionary<string, string?>
         {
             ["Database:Provider"] = "InMemory",

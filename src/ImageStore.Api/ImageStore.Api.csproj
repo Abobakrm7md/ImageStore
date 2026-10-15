@@ -7,6 +7,10 @@
     <NoWarn>$(NoWarn);CS1591</NoWarn>
     <!-- Local development secrets (connection strings): dotnet user-secrets set ... -->
     <UserSecretsId>imagestore-api-3c6f5d8e-1b2a-4f7e-9d0c-5a4b3e2f1d0c</UserSecretsId>
+    <!-- wwwroot only holds the optional SPA build output (npm run build:api), not source assets.
+         Without the static-web-assets manifest the app also starts when wwwroot is absent, and
+         wwwroot content is still published as regular content. -->
+    <StaticWebAssetsEnabled>false</StaticWebAssetsEnabled>
   </PropertyGroup>
 
   <ItemGroup>

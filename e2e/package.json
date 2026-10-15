@@ -1,0 +1,13 @@
+{
+  "name": "image-store-e2e",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Browser smoke test of the full ImageStore stack (SPA + API).",
+  "type": "module",
+  "scripts": {
+    "test": "node smoke.mjs"
+  },
+  "devDependencies": {
+    "puppeteer": "^25.14.0"
+  }
+}
