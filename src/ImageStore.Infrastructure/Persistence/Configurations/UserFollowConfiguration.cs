@@ -23,15 +23,18 @@ internal sealed class UserFollowConfiguration : IEntityTypeConfiguration<UserFol
         // (The key already covers WHERE FollowerUserId = @u for the following list.)
         builder.HasIndex(follow => follow.FollowedUserId);
 
-        // Follow relationships are meaningless without their users: they go with the account.
+        // Restrict on both sides. SQL Server forbids two cascade paths from AspNetUsers into the
+        // same table ("may cause cycles or multiple cascade paths"), and account deletion is
+        // already blocked by the Restrict FKs on authored content: follow rows are removed
+        // explicitly before a user is deleted, so nothing unrelated is ever taken with it.
         builder.HasOne<ApplicationUser>()
             .WithMany()
             .HasForeignKey(follow => follow.FollowerUserId)
-            .OnDelete(DeleteBehavior.Cascade);
+            .OnDelete(DeleteBehavior.Restrict);
 
         builder.HasOne<ApplicationUser>()
             .WithMany()
             .HasForeignKey(follow => follow.FollowedUserId)
-            .OnDelete(DeleteBehavior.Cascade);
+            .OnDelete(DeleteBehavior.Restrict);
     }
 }

@@ -56,6 +56,19 @@ public sealed class UserProfile
         };
     }
 
+    /// <summary>Creates a profile with an initial (optional) biography; same rules as above.</summary>
+    public static UserProfile Create(
+        Guid userId,
+        string userName,
+        string displayName,
+        string? bio,
+        DateTime createdAtUtc)
+    {
+        var profile = Create(userId, userName, displayName, createdAtUtc);
+        profile.Bio = NormalizeBio(bio);
+        return profile;
+    }
+
     /// <summary>Updates the editable profile fields. The user name is immutable.</summary>
     public void Update(string displayName, string? bio, DateTime updatedAtUtc)
     {

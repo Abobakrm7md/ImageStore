@@ -56,7 +56,7 @@ public sealed class StoragePersistenceTests : IDisposable
 
         var avatar = await returned.Http.GetAsync(new Uri($"/api/users/{userId}/profile-picture", UriKind.Relative));
         Assert.Equal(HttpStatusCode.OK, avatar.StatusCode);
-        Assert.Equal("image/jpeg", avatar.Headers.ContentType?.MediaType);
+        Assert.Equal("image/jpeg", avatar.Content.Headers.ContentType?.MediaType);
     }
 
     [Fact]

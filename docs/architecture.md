@@ -157,8 +157,8 @@ explicit:
 
 | Table           | Key & constraints                                                                                                    | FK behaviour                                                                                     |
 | --------------- | -------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
-| `UserProfiles`  | PK `UserId` (= `AspNetUsers.Id`), unique index on `NormalizedUserName`                                                | `Cascade` from `AspNetUsers` – deleting the account removes the profile (pictures, follows).      |
-| `UserFollows`   | Composite PK `(FollowerUserId, FollowedUserId)` – duplicates impossible; self-follows are rejected by the domain entity and the service (`400`) | `Cascade` from `AspNetUsers` on both sides.                                                       |
+| `UserProfiles`  | PK `UserId` (= `AspNetUsers.Id`), unique index on `NormalizedUserName`                                                | `Cascade` from `AspNetUsers` – deleting the account removes the profile (and its picture).        |
+| `UserFollows`   | Composite PK `(FollowerUserId, FollowedUserId)` – duplicates impossible; self-follows are rejected by the domain entity and the service (`400`) | `AspNetUsers` **Restrict** on both sides – SQL Server forbids two cascade paths into one table, and account deletion is already guarded by the authorship FKs; follow rows are removed explicitly first. |
 | `ImagePosts`    | PK `Id` (GUIDv7 – time-ordered), **unique** `ImageId` (one post per image), index `(AuthorUserId, CreatedAtUtc DESC)` | Author → `UserProfiles` **Restrict**; Image → `Images` **Cascade**.                                |
 | `Comments`      | PK `Id`, index `(PostId, CreatedAtUtc)`                                                                              | Post **Cascade**; author → `UserProfiles` **Restrict**.                                            |
 | `PostReactions` | PK `Id`; **unique index `(PostId, UserId)`** – DB-level one-reaction-per-user; `Reaction` stored as `int`              | Post **Cascade**; user → `AspNetUsers` **Restrict**.                                               |
@@ -170,8 +170,10 @@ Design decisions:
   keep correct than denormalized columns; revisit only with measurements.
 - **Restrict on authorship** means an account cannot be deleted while it still owns posts,
   comments or reactions – deliberate: content removal must be an explicit step (delete posts →
-  delete comments/reactions → delete account), so nobody's feed silently loses context. Profiles
-  and follows still cascade with the user.
+  delete comments/reactions → delete account), so nobody's feed silently loses context.
+  The profile (with its picture) still cascades with the user, while follow rows are `Restrict`
+  (SQL Server allows only one cascade path per table pair) and are removed explicitly before an
+  account deletion.
 - **Deleting a post** cascades its comments and reactions but **keeps the image** (row and file)
   in the author's library – it just becomes unpublished and can be posted again. **Deleting an
   image** cascades its post, comments and reactions, then removes the file (the existing

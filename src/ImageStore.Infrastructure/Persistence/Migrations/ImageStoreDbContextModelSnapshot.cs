@@ -570,13 +570,13 @@ namespace ImageStore.Infrastructure.Persistence.Migrations
                     b.HasOne("ImageStore.Infrastructure.Identity.ApplicationUser", null)
                         .WithMany()
                         .HasForeignKey("FollowedUserId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.HasOne("ImageStore.Infrastructure.Identity.ApplicationUser", null)
                         .WithMany()
                         .HasForeignKey("FollowerUserId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
                 });
 

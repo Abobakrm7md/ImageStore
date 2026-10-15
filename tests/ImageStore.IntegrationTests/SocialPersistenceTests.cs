@@ -38,8 +38,11 @@ public sealed class SocialPersistenceTests
             ["FollowerUserId", "FollowedUserId"],
             follows.FindPrimaryKey()!.Properties.Select(property => property.Name).ToArray());
         Assert.Equal(2, follows.GetForeignKeys().Count());
+
+        // Restrict, not Cascade: SQL Server rejects two cascade paths from AspNetUsers into the
+        // same table, and account deletion is guarded by the Restrict FKs on authored content.
         Assert.All(follows.GetForeignKeys(), foreignKey =>
-            Assert.Equal(Microsoft.EntityFrameworkCore.Metadata.DeleteBehavior.Cascade, foreignKey.DeleteBehavior));
+            Assert.Equal(DeleteBehavior.Restrict, foreignKey.DeleteBehavior));
     }
 
     [Fact]
@@ -74,13 +77,13 @@ public sealed class SocialPersistenceTests
 
         // Deleting a post removes its comments and reactions; deleting an image unpublishes its post.
         Assert.Equal(
-            Microsoft.EntityFrameworkCore.Metadata.DeleteBehavior.Cascade,
+            DeleteBehavior.Cascade,
             comments.GetForeignKeys().Single(foreignKey => foreignKey.Properties[0].Name == nameof(Comment.PostId)).DeleteBehavior);
         Assert.Equal(
-            Microsoft.EntityFrameworkCore.Metadata.DeleteBehavior.Cascade,
+            DeleteBehavior.Cascade,
             posts.GetForeignKeys().Single(foreignKey => foreignKey.Properties[0].Name == nameof(ImagePost.ImageId)).DeleteBehavior);
         Assert.Equal(
-            Microsoft.EntityFrameworkCore.Metadata.DeleteBehavior.Restrict,
+            DeleteBehavior.Restrict,
             posts.GetForeignKeys().Single(foreignKey => foreignKey.Properties[0].Name == nameof(ImagePost.AuthorUserId)).DeleteBehavior);
     }
 

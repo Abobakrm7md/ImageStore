@@ -135,8 +135,8 @@ No database change is needed at any point – rows never reference the absolute 
   database row first and then the file; a failed file delete leaves a reported orphan.
 - **Removing a profile picture** deletes the file under `profiles/` after the database commit.
 - **Deleting an account** is blocked (foreign keys are `Restrict`) while the user still owns
-  posts, comments or reactions – remove that content first; the profile, follows and profile
-  picture then cascade with the account.
+  posts, comments or reactions, or while follow relationships reference them – remove that
+  content first; the profile and its picture then cascade with the account.
 
 ### Docker (optional)
 
