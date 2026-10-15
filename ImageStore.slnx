@@ -1,0 +1,12 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/ImageStore.Api/ImageStore.Api.csproj" />
+    <Project Path="src/ImageStore.Application/ImageStore.Application.csproj" />
+    <Project Path="src/ImageStore.Domain/ImageStore.Domain.csproj" />
+    <Project Path="src/ImageStore.Infrastructure/ImageStore.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/ImageStore.IntegrationTests/ImageStore.IntegrationTests.csproj" />
+    <Project Path="tests/ImageStore.UnitTests/ImageStore.UnitTests.csproj" />
+  </Folder>
+</Solution>

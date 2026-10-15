@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <RootNamespace>ImageStore.Api</RootNamespace>
+    <!-- XML docs feed the Swagger/OpenAPI descriptions. -->
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
+    <!-- Local development secrets (connection strings): dotnet user-secrets set ... -->
+    <UserSecretsId>imagestore-api-3c6f5d8e-1b2a-4f7e-9d0c-5a4b3e2f1d0c</UserSecretsId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Swashbuckle.AspNetCore" />
+    <!-- Design-time services for 'dotnet ef' (migrations); not shipped with the app. -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ImageStore.Application\ImageStore.Application.csproj" />
+    <ProjectReference Include="..\ImageStore.Infrastructure\ImageStore.Infrastructure.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="ImageStore.IntegrationTests" />
+  </ItemGroup>
+
+</Project>
