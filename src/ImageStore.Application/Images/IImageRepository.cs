@@ -17,9 +17,15 @@ public interface IImageRepository
 
     Task<PagedResult<Image>> ListOwnedAsync(Guid ownerUserId, ImageListCriteria criteria, CancellationToken cancellationToken);
 
-    Task<IReadOnlyList<Tag>> FindOwnedTagsAsync(
+    /// <summary>
+    /// Returns the owner's tags with the given (cleaned, distinct) names, creating missing ones.
+    /// New tags are committed immediately so that concurrent requests using the same new tag share
+    /// one row; if another request wins the race (unique-key violation), its tag is reused.
+    /// Must be called before any other change is made in the current unit of work.
+    /// </summary>
+    Task<IReadOnlyList<Tag>> GetOrCreateTagsAsync(
         Guid ownerUserId,
-        IReadOnlyCollection<string> normalizedNames,
+        IReadOnlyList<string> names,
         CancellationToken cancellationToken);
 
     /// <summary>
@@ -36,8 +42,6 @@ public interface IImageRepository
     Task<bool> AnyExistAsync(Guid ownerUserId, IReadOnlyCollection<Guid> imageIds, CancellationToken cancellationToken);
 
     void Add(Image image);
-
-    void AddTag(Tag tag);
 
     void Remove(Image image);
 

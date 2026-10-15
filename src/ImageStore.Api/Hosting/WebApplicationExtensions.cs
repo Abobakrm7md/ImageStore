@@ -33,6 +33,12 @@ internal static class WebApplicationExtensions
 
     public static WebApplication UseApiPipeline(this WebApplication app)
     {
+        // Must run first so every later component sees the client's scheme and IP.
+        if (app.Configuration.GetValue<bool>($"{ForwardedHeadersSettings.SectionName}:Enabled"))
+        {
+            app.UseForwardedHeaders();
+        }
+
         if (!app.Environment.IsDevelopment())
         {
             app.UseHsts();

@@ -1,0 +1,46 @@
+<a class="skip-link" href="#main">Skip to content</a>
+
+<header class="app-header">
+  <div class="header-inner">
+    <a class="brand" [routerLink]="auth.isAuthenticated() ? '/images' : '/login'">
+      <app-icon class="brand-mark" name="logo" [size]="26" />
+      <span>ImageStore</span>
+    </a>
+
+    @if (auth.user(); as user) {
+      <button
+        type="button"
+        class="menu-toggle"
+        [attr.aria-expanded]="menuOpen()"
+        aria-controls="main-nav"
+        aria-label="Toggle navigation"
+        (click)="menuOpen.set(!menuOpen())"
+      >
+        <app-icon [name]="menuOpen() ? 'close' : 'menu'" />
+      </button>
+      <nav id="main-nav" class="main-nav" [class.open]="menuOpen()" aria-label="Main">
+        <a
+          routerLink="/images"
+          routerLinkActive="active"
+          [routerLinkActiveOptions]="{ exact: true }"
+          >Gallery</a
+        >
+        <a routerLink="/images/upload" routerLinkActive="active">Upload</a>
+        <span class="user-email" [title]="user.email">{{ user.email }}</span>
+        <button type="button" class="btn btn-ghost btn-sm" (click)="logout()">Sign out</button>
+      </nav>
+    } @else {
+      <nav class="main-nav guest" aria-label="Account">
+        <a routerLink="/login" routerLinkActive="active">Sign in</a>
+        <a class="btn btn-primary btn-sm" routerLink="/register">Create account</a>
+      </nav>
+    }
+  </div>
+</header>
+
+<main id="main" class="app-main">
+  <router-outlet />
+</main>
+
+<app-toast-container />
+<app-confirm-dialog />

@@ -37,3 +37,8 @@ dotnet_naming_style.underscore_camel_case.required_prefix = _
 
 # Library code does not need ConfigureAwait(false) in ASP.NET Core.
 dotnet_diagnostic.CA2007.severity = none
+
+# EF Core migrations are generated (and written with a BOM by the EF tools); leave them as generated.
+[**/Migrations/*.cs]
+generated_code = true
+charset = unset

@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Globalization;
+using System.Net;
 using System.Security.Claims;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -15,6 +16,7 @@ using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Options;
 using Microsoft.OpenApi;
@@ -58,6 +60,7 @@ internal static class ApiServiceCollectionExtensions
         services.AddExceptionHandler<ApiExceptionHandler>();
 
         AddAuthentication(services);
+        AddForwardedHeaders(services, configuration);
         AddCors(services);
         AddRateLimiting(services);
         AddSwagger(services);
@@ -117,6 +120,27 @@ internal static class ApiServiceCollectionExtensions
             .SetFallbackPolicy(new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build())
             .AddPolicy(AuthorizationPolicies.AuthenticatedUser, policy =>
                 policy.RequireAuthenticatedUser().RequireClaim(ClaimTypes.NameIdentifier));
+    }
+
+    private static void AddForwardedHeaders(IServiceCollection services, IConfiguration configuration)
+    {
+        var settings = configuration.GetSection(ForwardedHeadersSettings.SectionName).Get<ForwardedHeadersSettings>() ?? new();
+        services.Configure<ForwardedHeadersOptions>(options =>
+        {
+            options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+            options.ForwardLimit = 1;
+
+            // Loopback proxies are trusted by default; add the configured ones.
+            foreach (var proxy in settings.KnownProxies.Where(value => !string.IsNullOrWhiteSpace(value)))
+            {
+                options.KnownProxies.Add(IPAddress.Parse(proxy));
+            }
+
+            foreach (var network in settings.KnownNetworks.Where(value => !string.IsNullOrWhiteSpace(value)))
+            {
+                options.KnownIPNetworks.Add(System.Net.IPNetwork.Parse(network));
+            }
+        });
     }
 
     private static void AddCors(IServiceCollection services)

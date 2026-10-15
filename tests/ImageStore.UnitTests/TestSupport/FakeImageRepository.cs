@@ -12,7 +12,6 @@ internal sealed class FakeImageRepository : IImageRepository
 {
     private readonly List<Image> _pendingAdds = [];
     private readonly List<Image> _pendingRemovals = [];
-    private readonly List<Tag> _pendingTagAdds = [];
     private readonly List<Tag> _pendingTagRemovals = [];
 
     public List<Image> Images { get; } = [];
@@ -40,8 +39,24 @@ internal sealed class FakeImageRepository : IImageRepository
         return Task.FromResult(new PagedResult<Image>(page, criteria.Page, criteria.PageSize, owned.Count));
     }
 
-    public Task<IReadOnlyList<Tag>> FindOwnedTagsAsync(Guid ownerUserId, IReadOnlyCollection<string> normalizedNames, CancellationToken cancellationToken) =>
-        Task.FromResult<IReadOnlyList<Tag>>(Tags.Where(tag => tag.OwnerUserId == ownerUserId && normalizedNames.Contains(tag.NormalizedName)).ToList());
+    /// <summary>Like the real repository, new tags are committed immediately.</summary>
+    public Task<IReadOnlyList<Tag>> GetOrCreateTagsAsync(Guid ownerUserId, IReadOnlyList<string> names, CancellationToken cancellationToken)
+    {
+        var result = new List<Tag>();
+        foreach (var name in names)
+        {
+            var tag = Tags.FirstOrDefault(t => t.OwnerUserId == ownerUserId && t.NormalizedName == Tag.Normalize(name));
+            if (tag is null)
+            {
+                tag = Tag.Create(Guid.NewGuid(), ownerUserId, name);
+                Tags.Add(tag);
+            }
+
+            result.Add(tag);
+        }
+
+        return Task.FromResult<IReadOnlyList<Tag>>(result);
+    }
 
     public Task<IReadOnlyList<Tag>> FindTagsUsedOnlyByAsync(Guid ownerUserId, Guid imageId, IReadOnlyCollection<Guid> tagIds, CancellationToken cancellationToken) =>
         Task.FromResult<IReadOnlyList<Tag>>(Tags
@@ -61,8 +76,6 @@ internal sealed class FakeImageRepository : IImageRepository
 
     public void Add(Image image) => _pendingAdds.Add(image);
 
-    public void AddTag(Tag tag) => _pendingTagAdds.Add(tag);
-
     public void Remove(Image image) => _pendingRemovals.Add(image);
 
     public void RemoveTags(IEnumerable<Tag> tags) => _pendingTagRemovals.AddRange(tags);
@@ -76,7 +89,6 @@ internal sealed class FakeImageRepository : IImageRepository
         }
 
         Images.AddRange(_pendingAdds);
-        Tags.AddRange(_pendingTagAdds);
         Images.RemoveAll(_pendingRemovals.Contains);
         Tags.RemoveAll(_pendingTagRemovals.Contains);
         ClearPending();
@@ -88,7 +100,6 @@ internal sealed class FakeImageRepository : IImageRepository
     {
         _pendingAdds.Clear();
         _pendingRemovals.Clear();
-        _pendingTagAdds.Clear();
         _pendingTagRemovals.Clear();
     }
 }

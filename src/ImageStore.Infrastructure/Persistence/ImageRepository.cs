@@ -9,6 +9,7 @@ namespace ImageStore.Infrastructure.Persistence;
 internal sealed class ImageRepository(ImageStoreDbContext dbContext) : IImageRepository
 {
     private const string LikeEscapeCharacter = "\\";
+    private const int MaxTagCreationAttempts = 3;
 
     public Task<Image?> GetOwnedAsync(Guid ownerUserId, Guid imageId, CancellationToken cancellationToken) =>
         dbContext.Images
@@ -35,19 +36,65 @@ internal sealed class ImageRepository(ImageStoreDbContext dbContext) : IImageRep
         return new PagedResult<Image>(items, criteria.Page, criteria.PageSize, totalCount);
     }
 
-    public async Task<IReadOnlyList<Tag>> FindOwnedTagsAsync(
+    public async Task<IReadOnlyList<Tag>> GetOrCreateTagsAsync(
         Guid ownerUserId,
-        IReadOnlyCollection<string> normalizedNames,
+        IReadOnlyList<string> names,
         CancellationToken cancellationToken)
     {
-        if (normalizedNames.Count == 0)
+        if (names.Count == 0)
         {
             return [];
         }
 
-        return await dbContext.Tags
-            .Where(tag => tag.OwnerUserId == ownerUserId && normalizedNames.Contains(tag.NormalizedName))
-            .ToListAsync(cancellationToken);
+        if (dbContext.ChangeTracker.HasChanges())
+        {
+            // New tags are committed immediately; other pending changes would be committed with them.
+            throw new InvalidOperationException("Tags must be resolved before other changes are made in the unit of work.");
+        }
+
+        var normalizedNames = names.Select(Tag.Normalize).Distinct(StringComparer.Ordinal).ToList();
+        for (var attempt = 1; ; attempt++)
+        {
+            var existing = await dbContext.Tags
+                .Where(tag => tag.OwnerUserId == ownerUserId && normalizedNames.Contains(tag.NormalizedName))
+                .ToListAsync(cancellationToken);
+
+            // Grouping tolerates duplicates, which providers without unique constraints may contain.
+            var byName = existing
+                .GroupBy(tag => tag.NormalizedName, StringComparer.Ordinal)
+                .ToDictionary(group => group.Key, group => group.OrderBy(tag => tag.Id).First(), StringComparer.Ordinal);
+
+            var created = names
+                .Where(name => !byName.ContainsKey(Tag.Normalize(name)))
+                .Select(name => Tag.Create(Guid.CreateVersion7(), ownerUserId, name))
+                .ToList();
+
+            if (created.Count > 0)
+            {
+                dbContext.Tags.AddRange(created);
+                try
+                {
+                    await dbContext.SaveChangesAsync(cancellationToken);
+                }
+                catch (DbUpdateException exception) when (IsUniqueConstraintViolation(exception) && attempt < MaxTagCreationAttempts)
+                {
+                    // A concurrent request created one of these tags first: discard ours and reuse theirs.
+                    foreach (var tag in created)
+                    {
+                        dbContext.Entry(tag).State = EntityState.Detached;
+                    }
+
+                    continue;
+                }
+
+                foreach (var tag in created)
+                {
+                    byName[tag.NormalizedName] = tag;
+                }
+            }
+
+            return names.Select(name => byName[Tag.Normalize(name)]).DistinctBy(tag => tag.Id).ToList();
+        }
     }
 
     public async Task<IReadOnlyList<Tag>> FindTagsUsedOnlyByAsync(
@@ -74,8 +121,6 @@ internal sealed class ImageRepository(ImageStoreDbContext dbContext) : IImageRep
             .AnyAsync(image => image.OwnerUserId == ownerUserId && imageIds.Contains(image.Id), cancellationToken);
 
     public void Add(Image image) => dbContext.Images.Add(image);
-
-    public void AddTag(Tag tag) => dbContext.Tags.Add(tag);
 
     public void Remove(Image image) => dbContext.Images.Remove(image);
 

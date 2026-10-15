@@ -383,41 +383,20 @@ public sealed partial class ImageService(
         LogUploadRolledBack(logger, failure, committedPaths.Count);
     }
 
-    private async Task<IReadOnlyList<Tag>> ResolveTagsAsync(
+    private Task<IReadOnlyList<Tag>> ResolveTagsAsync(
         Guid ownerUserId,
         IReadOnlyList<string>? requestedTags,
         CancellationToken cancellationToken)
     {
-        if (requestedTags is null || requestedTags.Count == 0)
-        {
-            return [];
-        }
-
-        var names = requestedTags
+        var names = (requestedTags ?? [])
             .Select(Tag.Clean)
             .Where(name => name.Length > 0)
             .DistinctBy(Tag.Normalize, StringComparer.Ordinal)
             .ToList();
 
-        var existing = await repository.FindOwnedTagsAsync(
-            ownerUserId,
-            names.Select(Tag.Normalize).ToList(),
-            cancellationToken);
-        var existingByName = existing.ToDictionary(tag => tag.NormalizedName, StringComparer.Ordinal);
-
-        var result = new List<Tag>(names.Count);
-        foreach (var name in names)
-        {
-            if (!existingByName.TryGetValue(Tag.Normalize(name), out var tag))
-            {
-                tag = Tag.Create(Guid.CreateVersion7(), ownerUserId, name);
-                repository.AddTag(tag);
-            }
-
-            result.Add(tag);
-        }
-
-        return result;
+        return names.Count == 0
+            ? Task.FromResult<IReadOnlyList<Tag>>([])
+            : repository.GetOrCreateTagsAsync(ownerUserId, names, cancellationToken);
     }
 
     internal static ImageDto ToDto(Image image) => new(

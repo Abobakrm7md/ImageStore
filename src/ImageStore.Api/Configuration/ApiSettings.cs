@@ -57,3 +57,22 @@ public sealed class SwaggerSettings
 
     public bool Enabled { get; set; }
 }
+
+/// <summary>
+/// Reverse-proxy support. When the API runs behind a TLS-terminating proxy (nginx, a load
+/// balancer, a container ingress), enable this so the original scheme and client IP are used –
+/// otherwise Secure cookies, HTTPS redirection and per-IP rate limiting see the proxy instead.
+/// Only requests from the listed proxies/networks (plus loopback) are trusted.
+/// </summary>
+public sealed class ForwardedHeadersSettings
+{
+    public const string SectionName = "ForwardedHeaders";
+
+    public bool Enabled { get; set; }
+
+    /// <summary>IP addresses of trusted proxies, e.g. <c>10.0.0.5</c>.</summary>
+    public string[] KnownProxies { get; set; } = [];
+
+    /// <summary>Trusted proxy networks in CIDR notation, e.g. <c>10.0.0.0/8</c>.</summary>
+    public string[] KnownNetworks { get; set; } = [];
+}
