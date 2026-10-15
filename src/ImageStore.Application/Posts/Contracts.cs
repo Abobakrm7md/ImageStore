@@ -21,6 +21,13 @@ public sealed record PostImageDto(
 public sealed record ReactionCountDto(ReactionType Reaction, int Count);
 
 /// <summary>An image post with everything needed to render it in a feed or on a profile.</summary>
+/// <param name="Id">The post identifier.</param>
+/// <param name="Title">Post title (defaults to the image title on creation).</param>
+/// <param name="Description">Optional description.</param>
+/// <param name="CreatedAtUtc">Publication timestamp (UTC).</param>
+/// <param name="UpdatedAtUtc">Last edit timestamp (UTC), if the post was edited.</param>
+/// <param name="Author">The author, as needed to render the post.</param>
+/// <param name="Image">The published image; bytes come from <c>GET /api/posts/{id}/content</c>.</param>
 /// <param name="CommentCount">Total number of comments.</param>
 /// <param name="ReactionCount">Total number of reactions.</param>
 /// <param name="ReactionCounts">Counts for every known reaction type (zero included).</param>
@@ -50,6 +57,12 @@ public sealed record CreatePostRequest(Guid? ImageId, string? Title, string? Des
 public sealed record UpdatePostRequest(string? Title, string? Description);
 
 /// <summary>A comment on a post.</summary>
+/// <param name="Id">The comment identifier.</param>
+/// <param name="PostId">The post the comment belongs to.</param>
+/// <param name="Author">The comment author, as needed to render the comment.</param>
+/// <param name="Content">The comment text.</param>
+/// <param name="CreatedAtUtc">Creation timestamp (UTC).</param>
+/// <param name="UpdatedAtUtc">Last edit timestamp (UTC), if the comment was edited.</param>
 /// <param name="IsMine">Whether the calling user wrote the comment (enables edit/delete).</param>
 /// <param name="CanDelete">Whether the calling user may delete it (author or post owner).</param>
 public sealed record CommentDto(

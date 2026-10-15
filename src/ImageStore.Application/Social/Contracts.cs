@@ -16,11 +16,17 @@ public sealed record UserSummaryDto(
     bool IsFollowing);
 
 /// <summary>A full user profile as shown on the profile page.</summary>
+/// <param name="Id">The user identifier.</param>
+/// <param name="UserName">Unique, immutable user name.</param>
+/// <param name="DisplayName">Free-text display name.</param>
+/// <param name="Bio">Optional biography.</param>
+/// <param name="HasProfilePicture">Whether <c>GET /api/users/{id}/profile-picture</c> returns an image.</param>
 /// <param name="FollowerCount">Number of users following this user.</param>
 /// <param name="FollowingCount">Number of users this user follows.</param>
 /// <param name="PostCount">Number of published image posts (only meaningful when the caller may see them).</param>
 /// <param name="IsFollowing">Whether the calling user follows this user.</param>
 /// <param name="IsCurrentUser">Whether the profile belongs to the calling user.</param>
+/// <param name="CreatedAtUtc">When the profile was created (UTC).</param>
 public sealed record UserProfileDto(
     Guid Id,
     string UserName,
