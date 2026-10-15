@@ -1,0 +1,207 @@
+<section class="page">
+  <header class="page-header">
+    <div>
+      <h1>Upload images</h1>
+      <p class="muted">
+        @if (policy.hasValue()) {
+          {{ describeLimits(policy.value()) }}
+        } @else {
+          &nbsp;
+        }
+      </p>
+    </div>
+    <a class="btn btn-secondary" routerLink="/images">Back to gallery</a>
+  </header>
+
+  @if (policy.error()) {
+    <app-empty-state
+      heading="Upload settings could not be loaded"
+      message="Check your connection and try again."
+      icon="alert"
+      tone="error"
+    >
+      <button type="button" class="btn btn-primary" (click)="policy.reload()">Try again</button>
+    </app-empty-state>
+  } @else if (!policy.hasValue()) {
+    <div class="dropzone skeleton" aria-busy="true"></div>
+  } @else {
+    <div
+      class="dropzone"
+      [class.drag-active]="dragActive()"
+      (dragenter)="onDragOver($event)"
+      (dragover)="onDragOver($event)"
+      (dragleave)="onDragLeave($event)"
+      (drop)="onDrop($event)"
+    >
+      <input
+        #fileInput
+        id="file-input"
+        type="file"
+        multiple
+        class="visually-hidden"
+        [accept]="accept()"
+        (change)="onFilesSelected(fileInput)"
+        tabindex="-1"
+      />
+      <div class="dropzone-icon"><app-icon name="upload" [size]="40" /></div>
+      <p class="dropzone-title"><strong>Drag and drop images here</strong></p>
+      <p class="muted">or</p>
+      <button type="button" class="btn btn-primary" (click)="fileInput.click()">
+        Choose files
+      </button>
+      <p class="hint">Files are checked again on the server before they are stored.</p>
+    </div>
+
+    @if (items().length) {
+      <form class="card metadata" [formGroup]="metadataForm" novalidate>
+        <h2 class="section-title">Details for all files</h2>
+        <div class="metadata-grid">
+          <div class="form-field">
+            <label for="upload-description"
+              >Description <span class="optional">(optional)</span></label
+            >
+            <textarea
+              id="upload-description"
+              rows="2"
+              formControlName="description"
+              maxlength="2000"
+            ></textarea>
+            <app-field-error [control]="metadataForm.controls.description" label="Description" />
+          </div>
+          <div class="form-field">
+            <label for="upload-tags">Tags <span class="optional">(comma separated)</span></label>
+            <input
+              id="upload-tags"
+              type="text"
+              formControlName="tags"
+              placeholder="e.g. travel, family, 2026"
+            />
+            <app-field-error [control]="metadataForm.controls.tags" label="Tags" />
+          </div>
+        </div>
+      </form>
+
+      <ul class="upload-list" aria-label="Selected files">
+        @for (item of items(); track item.id) {
+          <li class="upload-item card" [class]="'upload-item card status-' + item.status">
+            <div class="upload-thumb">
+              @if (item.previewUrl && !item.previewBroken) {
+                <img [src]="item.previewUrl" alt="" (error)="markPreviewBroken(item)" />
+              } @else {
+                <app-icon
+                  [name]="
+                    item.status === 'invalid' || item.status === 'rejected' || item.previewBroken
+                      ? 'alert'
+                      : 'image'
+                  "
+                  [size]="28"
+                />
+              }
+            </div>
+
+            <div class="upload-info">
+              <label class="visually-hidden" [for]="'title-' + item.id"
+                >Title for {{ item.file.name }}</label
+              >
+              <input
+                [id]="'title-' + item.id"
+                type="text"
+                class="title-input"
+                [formControl]="item.title"
+                [readOnly]="item.status !== 'ready' && item.status !== 'failed'"
+                placeholder="Title"
+              />
+              <app-field-error [control]="item.title" label="Title" />
+              <p class="file-meta">{{ item.file.name }} · {{ item.file.size | fileSize }}</p>
+
+              @switch (item.status) {
+                @case ('queued') {
+                  <p class="status muted">Waiting…</p>
+                }
+                @case ('uploading') {
+                  <div class="status progress-row">
+                    <progress
+                      max="100"
+                      [value]="item.progress"
+                      [attr.aria-label]="'Uploading ' + item.file.name"
+                    ></progress>
+                    <span class="percent">{{ item.progress }}%</span>
+                  </div>
+                }
+                @case ('done') {
+                  <p class="status status-success">
+                    <app-icon name="check" [size]="16" /> Uploaded
+                    @if (item.result; as result) {
+                      · <a [routerLink]="['/images', result.id]">View</a>
+                    }
+                  </p>
+                }
+                @case ('failed') {
+                  <p class="status field-error" role="alert">{{ item.error }}</p>
+                }
+                @case ('invalid') {
+                  <p class="status field-error" role="alert">{{ item.error }}</p>
+                }
+                @case ('rejected') {
+                  <p class="status field-error" role="alert">{{ item.error }}</p>
+                }
+              }
+            </div>
+
+            <div class="upload-actions">
+              @if (item.status === 'failed') {
+                <button type="button" class="btn btn-secondary btn-sm" (click)="retry(item)">
+                  Retry
+                </button>
+              }
+              @if (item.status !== 'done') {
+                <button
+                  type="button"
+                  class="btn btn-ghost btn-sm"
+                  (click)="remove(item)"
+                  [attr.aria-label]="
+                    (item.status === 'uploading' ? 'Cancel upload of ' : 'Remove ') + item.file.name
+                  "
+                >
+                  {{
+                    item.status === 'uploading' || item.status === 'queued' ? 'Cancel' : 'Remove'
+                  }}
+                </button>
+              }
+            </div>
+          </li>
+        }
+      </ul>
+
+      <div class="upload-footer card">
+        <p class="muted" aria-live="polite">
+          {{ counts().ready }} ready · {{ counts().active }} uploading · {{ counts().done }} done
+          @if (counts().failed) {
+            · <span class="text-danger">{{ counts().failed }} failed</span>
+          }
+          @if (counts().invalid + counts().rejected) {
+            · <span class="text-danger">{{ counts().invalid + counts().rejected }} rejected</span>
+          }
+        </p>
+        <div class="footer-actions">
+          @if (counts().done || counts().invalid || counts().rejected) {
+            <button type="button" class="btn btn-ghost" (click)="clearFinished()">
+              Clear finished
+            </button>
+          }
+          @if (counts().done && !counts().active) {
+            <a class="btn btn-secondary" routerLink="/images">View gallery</a>
+          }
+          <button
+            type="button"
+            class="btn btn-primary"
+            [disabled]="!counts().ready || counts().active > 0"
+            (click)="uploadAll()"
+          >
+            Upload {{ counts().ready || '' }} {{ counts().ready === 1 ? 'image' : 'images' }}
+          </button>
+        </div>
+      </div>
+    }
+  }
+</section>

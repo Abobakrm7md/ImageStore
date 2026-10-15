@@ -1,0 +1,131 @@
+<section class="page">
+  <header class="page-header">
+    <div>
+      <h1>My images</h1>
+      <p class="muted" aria-live="polite">
+        @if (images.hasValue()) {
+          {{ images.value().totalCount }} {{ images.value().totalCount === 1 ? 'image' : 'images' }}
+          @if (query().search || query().tag) {
+            matching your filters
+          }
+        } @else {
+          &nbsp;
+        }
+      </p>
+    </div>
+    <a class="btn btn-primary" routerLink="/images/upload"
+      ><app-icon name="plus" [size]="18" /> Upload</a
+    >
+  </header>
+
+  <div class="toolbar">
+    <div class="search">
+      <app-icon class="search-icon" name="search" [size]="18" />
+      <input
+        type="search"
+        [formControl]="searchControl"
+        placeholder="Search titles and descriptions…"
+        aria-label="Search images"
+        maxlength="200"
+      />
+    </div>
+    <label class="sort">
+      <span class="visually-hidden">Sort by</span>
+      <select
+        [value]="currentSort()"
+        (change)="changeSort($any($event.target).value)"
+        aria-label="Sort images"
+      >
+        @for (option of sortOptions; track option.value) {
+          <option [value]="option.value" [selected]="option.value === currentSort()">
+            {{ option.label }}
+          </option>
+        }
+      </select>
+    </label>
+  </div>
+
+  @if (query().tag; as tag) {
+    <div class="active-filters">
+      <span class="muted">Tag:</span>
+      <button
+        type="button"
+        class="tag tag-active"
+        (click)="filterByTag(null)"
+        [attr.aria-label]="'Remove tag filter ' + tag"
+      >
+        #{{ tag }} <span aria-hidden="true">×</span>
+      </button>
+    </div>
+  }
+
+  <div class="progress-track" [class.active]="images.isLoading()" aria-hidden="true"></div>
+
+  @if (images.error()) {
+    <app-empty-state
+      heading="Couldn't load your images"
+      message="Check your connection and try again."
+      icon="alert"
+      tone="error"
+    >
+      <button type="button" class="btn btn-primary" (click)="images.reload()">Try again</button>
+    </app-empty-state>
+  } @else if (images.hasValue()) {
+    @let result = images.value();
+    @if (result.items.length === 0) {
+      @if (query().search || query().tag) {
+        <app-empty-state
+          heading="No matching images"
+          message="Try a different search or clear the filters."
+          icon="search"
+        >
+          <button type="button" class="btn btn-secondary" (click)="clearFilters()">
+            Clear filters
+          </button>
+        </app-empty-state>
+      } @else if (result.totalCount > 0) {
+        <app-empty-state heading="This page is empty" icon="compass">
+          <button type="button" class="btn btn-secondary" (click)="goToPage(1)">
+            Go to the first page
+          </button>
+        </app-empty-state>
+      } @else {
+        <app-empty-state
+          heading="No images yet"
+          message="Upload your first images – they stay private to your account."
+        >
+          <a class="btn btn-primary" routerLink="/images/upload">Upload images</a>
+        </app-empty-state>
+      }
+    } @else {
+      <ul class="image-grid" [class.dimmed]="images.isLoading()">
+        @for (image of result.items; track image.id) {
+          <li>
+            <app-image-card
+              [image]="image"
+              (deleteRequested)="confirmDelete($event)"
+              (tagSelected)="filterByTag($event)"
+            />
+          </li>
+        }
+      </ul>
+      <app-pagination
+        [page]="result.page"
+        [totalPages]="result.totalPages"
+        (pageChange)="goToPage($event)"
+      />
+    }
+  } @else {
+    <ul class="image-grid" aria-busy="true" aria-label="Loading images">
+      @for (item of skeletons; track item) {
+        <li>
+          <div class="skeleton-card card">
+            <div class="skeleton skeleton-thumb"></div>
+            <div class="skeleton skeleton-line"></div>
+            <div class="skeleton skeleton-line short"></div>
+          </div>
+        </li>
+      }
+    </ul>
+  }
+</section>

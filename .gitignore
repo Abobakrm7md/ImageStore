@@ -1,0 +1,48 @@
+# ---- .NET ----
+bin/
+obj/
+*.user
+*.suo
+*.userprefs
+.vs/
+*.rsuser
+TestResults/
+*.trx
+coverage*.xml
+*.coverage
+*.nupkg
+efbundle
+efbundle.exe
+artifacts/
+publish/
+
+# ---- Angular / Node ----
+client/node_modules/
+client/dist/
+client/.angular/
+client/coverage/
+npm-debug.log*
+yarn-error.log*
+
+# The API serves the built SPA from wwwroot in single-server deployments.
+# The build output is generated, never committed.
+src/ImageStore.Api/wwwroot/
+
+# ---- Runtime data (uploaded images, data-protection keys) ----
+# Uploaded files are user data and must never be committed.
+storage/
+src/ImageStore.Api/storage/
+
+# ---- Editors / OS ----
+.idea/
+.vscode/*
+!.vscode/extensions.json
+*.swp
+.DS_Store
+Thumbs.db
+
+# ---- Secrets ----
+.env
+.env.*
+appsettings.*.local.json
+*.pfx

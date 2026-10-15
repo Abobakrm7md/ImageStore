@@ -1,0 +1,155 @@
+<section class="page">
+  <nav class="breadcrumb" aria-label="Breadcrumb">
+    <a routerLink="/images"><app-icon name="arrow-left" [size]="16" /> My images</a>
+  </nav>
+
+  @if (notFound()) {
+    <app-empty-state
+      heading="Image not found"
+      message="It may have been deleted, or the link is incorrect."
+      icon="search"
+    >
+      <a class="btn btn-primary" routerLink="/images">Back to gallery</a>
+    </app-empty-state>
+  } @else if (image.error()) {
+    <app-empty-state
+      heading="Couldn't load this image"
+      message="Check your connection and try again."
+      icon="alert"
+      tone="error"
+    >
+      <button type="button" class="btn btn-primary" (click)="image.reload()">Try again</button>
+    </app-empty-state>
+  } @else if (image.hasValue()) {
+    @let img = image.value();
+    <div class="detail-layout">
+      <div class="preview card">
+        <button
+          type="button"
+          class="preview-button"
+          (click)="lightboxOpen.set(true)"
+          aria-label="View full size"
+        >
+          <img [src]="contentUrl()" [alt]="img.title" decoding="async" />
+          <span class="zoom-hint" aria-hidden="true"
+            ><app-icon name="expand" [size]="14" /> View full size</span
+          >
+        </button>
+      </div>
+
+      <aside class="side">
+        <div class="card side-card">
+          <h1 class="detail-title">{{ img.title }}</h1>
+          <dl class="facts">
+            <div>
+              <dt>Uploaded</dt>
+              <dd>
+                <time [attr.datetime]="img.createdAtUtc">{{
+                  img.createdAtUtc | date: 'medium'
+                }}</time>
+              </dd>
+            </div>
+            @if (img.updatedAtUtc) {
+              <div>
+                <dt>Last edited</dt>
+                <dd>
+                  <time [attr.datetime]="img.updatedAtUtc">{{
+                    img.updatedAtUtc | date: 'medium'
+                  }}</time>
+                </dd>
+              </div>
+            }
+            <div>
+              <dt>File size</dt>
+              <dd>{{ img.fileSizeBytes | fileSize }}</dd>
+            </div>
+            <div>
+              <dt>Type</dt>
+              <dd>{{ img.contentType }}</dd>
+            </div>
+            @if (img.width && img.height) {
+              <div>
+                <dt>Dimensions</dt>
+                <dd>{{ img.width }} × {{ img.height }} px</dd>
+              </div>
+            }
+            <div>
+              <dt>Original file</dt>
+              <dd class="break">{{ img.originalFileName }}</dd>
+            </div>
+          </dl>
+          <div class="side-actions">
+            <a class="btn btn-secondary" [href]="downloadUrl()" download>Download</a>
+            <button type="button" class="btn btn-danger" (click)="delete()" [disabled]="deleting()">
+              {{ deleting() ? 'Deleting…' : 'Delete' }}
+            </button>
+          </div>
+        </div>
+
+        <form class="card side-card" [formGroup]="form" (ngSubmit)="save()" novalidate>
+          <h2 class="section-title">Edit details</h2>
+
+          @if (formError(); as error) {
+            <div class="alert alert-error" role="alert">{{ error }}</div>
+          }
+
+          <div class="form-field">
+            <label for="edit-title">Title</label>
+            <input id="edit-title" type="text" formControlName="title" maxlength="200" />
+            <app-field-error [control]="form.controls.title" label="Title" />
+          </div>
+
+          <div class="form-field">
+            <label for="edit-description"
+              >Description <span class="optional">(optional)</span></label
+            >
+            <textarea
+              id="edit-description"
+              rows="4"
+              formControlName="description"
+              maxlength="2000"
+            ></textarea>
+            <app-field-error [control]="form.controls.description" label="Description" />
+          </div>
+
+          <div class="form-field">
+            <label for="edit-tags">Tags <span class="optional">(comma separated)</span></label>
+            <input
+              id="edit-tags"
+              type="text"
+              formControlName="tags"
+              placeholder="e.g. travel, family"
+            />
+            <app-field-error [control]="form.controls.tags" label="Tags" />
+          </div>
+
+          <div class="form-actions">
+            <button
+              type="button"
+              class="btn btn-ghost"
+              (click)="discardChanges()"
+              [disabled]="form.pristine || saving()"
+            >
+              Discard
+            </button>
+            <button type="submit" class="btn btn-primary" [disabled]="form.pristine || saving()">
+              {{ saving() ? 'Saving…' : 'Save changes' }}
+            </button>
+          </div>
+        </form>
+      </aside>
+    </div>
+
+    <app-image-lightbox
+      [src]="contentUrl()"
+      [alt]="img.title"
+      [open]="lightboxOpen()"
+      (closed)="lightboxOpen.set(false)"
+    />
+  } @else {
+    <div class="detail-layout" aria-busy="true">
+      <div class="preview card skeleton skeleton-preview"></div>
+      <div class="side card skeleton skeleton-side"></div>
+    </div>
+  }
+</section>
