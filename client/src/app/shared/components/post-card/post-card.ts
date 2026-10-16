@@ -1,12 +1,5 @@
 import { DatePipe } from '@angular/common';
-import {
-  ChangeDetectionStrategy,
-  Component,
-  computed,
-  inject,
-  input,
-  signal,
-} from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { ImagePost, ReactionSummary } from '../../../core/models/api.models';
 import { PostApiService } from '../../../core/posts/post-api.service';
@@ -25,7 +18,27 @@ import { ReactionBar } from '../reaction-bar/reaction-bar';
   imports: [RouterLink, DatePipe, Avatar, Icon, ReactionBar],
   template: `
     @let post = displayPost();
-    <article class="post-card card">
+    <article class="post-card" [class.featured]="featured()">
+      <a
+        class="post-image"
+        [routerLink]="['/posts', post.id]"
+        [attr.aria-label]="'Open post: ' + post.title"
+      >
+        @if (!broken()) {
+          <img
+            [src]="api.contentUrl(post.id)"
+            [alt]="post.title"
+            [loading]="featured() ? 'eager' : 'lazy'"
+            [attr.width]="post.image.width || 1200"
+            [attr.height]="post.image.height || 900"
+            decoding="async"
+            (error)="broken.set(true)"
+          />
+        } @else {
+          <span class="post-image-fallback"><app-icon name="image" [size]="40" /></span>
+        }
+      </a>
+
       <header class="post-head">
         <app-avatar [user]="post.author" [size]="38" />
         <div class="post-head-text">
@@ -35,27 +48,15 @@ import { ReactionBar } from '../reaction-bar/reaction-bar';
           <p class="post-meta">
             <span class="post-username">&#64;{{ post.author.userName }}</span>
             <span aria-hidden="true">·</span>
-            <time [attr.datetime]="post.createdAtUtc">{{ post.createdAtUtc | date: 'mediumDate' }}</time>
+            <time [attr.datetime]="post.createdAtUtc">{{
+              post.createdAtUtc | date: 'mediumDate'
+            }}</time>
             @if (post.updatedAtUtc) {
               <span class="muted">(edited)</span>
             }
           </p>
         </div>
       </header>
-
-      <a class="post-image" [routerLink]="['/posts', post.id]" [attr.aria-label]="'Open post: ' + post.title">
-        @if (!broken()) {
-          <img
-            [src]="api.contentUrl(post.id)"
-            [alt]="post.title"
-            loading="lazy"
-            decoding="async"
-            (error)="broken.set(true)"
-          />
-        } @else {
-          <span class="post-image-fallback"><app-icon name="image" [size]="40" /></span>
-        }
-      </a>
 
       <div class="card-body">
         <h2 class="card-title">
@@ -77,6 +78,14 @@ import { ReactionBar } from '../reaction-bar/reaction-bar';
             <span>{{ post.commentCount }}</span>
             <span class="visually-hidden">comments</span>
           </a>
+          <a
+            class="share-link"
+            routerLink="/chat"
+            [queryParams]="{ share: post.id }"
+            aria-label="Share post in a message"
+            title="Share in message"
+            ><app-icon name="send" [size]="17" /><span>Share</span></a
+          >
         </div>
       </div>
     </article>
@@ -85,6 +94,7 @@ import { ReactionBar } from '../reaction-bar/reaction-bar';
 })
 export class PostCard {
   readonly post = input.required<ImagePost>();
+  readonly featured = input(false);
 
   protected readonly api = inject(PostApiService);
   protected readonly broken = signal(false);

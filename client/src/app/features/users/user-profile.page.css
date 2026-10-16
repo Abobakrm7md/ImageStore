@@ -1,5 +1,5 @@
 .profile-page {
-  max-width: 52rem;
+  max-width: none;
 }
 
 .profile-head {
@@ -10,7 +10,8 @@
     'counts counts counts';
   gap: 0.9rem 1.2rem;
   align-items: center;
-  padding: 1.4rem 1.5rem 1rem;
+  padding: clamp(1.25rem, 3vw, 2.5rem);
+  border-top: 3px solid var(--color-primary-solid);
   margin-bottom: 1.5rem;
 }
 
@@ -25,7 +26,8 @@
 
 .profile-identity h1 {
   margin: 0;
-  font-size: 1.45rem;
+  font-size: clamp(1.6rem, 3vw, 2.6rem);
+  letter-spacing: -0.04em;
   overflow-wrap: anywhere;
 }
 
@@ -55,9 +57,11 @@
 .profile-counts {
   grid-area: counts;
   display: flex;
-  gap: 1.4rem;
+  flex-wrap: wrap;
+  gap: 1rem 2rem;
+  margin-top: 0.5rem;
   border-top: 1px solid var(--color-border);
-  padding-top: 0.8rem;
+  padding-top: 1.25rem;
 }
 
 .profile-counts a,
@@ -83,11 +87,45 @@
 
 .profile-post-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
-  gap: 1rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1.5rem;
   transition: opacity 0.2s ease;
 }
 
 .profile-post-grid.dimmed {
   opacity: 0.55;
+}
+
+.profile-post-grid > * {
+  min-width: 0;
+}
+@media (max-width: 1000px) {
+  .profile-post-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 600px) {
+  .profile-head {
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-areas: 'avatar identity' 'actions actions' 'counts counts';
+    gap: 1.25rem;
+  }
+  .profile-actions {
+    justify-content: start;
+  }
+  .profile-since {
+    font-size: 0.72rem;
+  }
+  .profile-post-grid {
+    grid-template-columns: 1fr;
+  }
+  .profile-head app-avatar {
+    align-self: start;
+  }
+  .profile-counts {
+    gap: 1rem;
+  }
+  .profile-username {
+    overflow-wrap: anywhere;
+  }
 }

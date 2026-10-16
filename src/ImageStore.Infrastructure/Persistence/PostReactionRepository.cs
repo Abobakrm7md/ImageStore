@@ -42,6 +42,7 @@ internal sealed class PostReactionRepository(ImageStoreDbContext dbContext) : IP
         {
             // Two concurrent requests tried to create the user's first reaction for the post;
             // the caller turns the insert into an update and retries.
+            dbContext.ChangeTracker.Clear();
             throw new ConflictException("The reaction conflicts with a concurrent update. Please retry.", exception);
         }
     }

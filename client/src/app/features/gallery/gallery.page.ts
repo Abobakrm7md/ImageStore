@@ -5,6 +5,7 @@ import {
   computed,
   effect,
   inject,
+  signal,
 } from '@angular/core';
 import { rxResource, takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
@@ -19,19 +20,35 @@ import { EmptyState } from '../../shared/components/empty-state/empty-state';
 import { Pagination } from '../../shared/components/pagination/pagination';
 import { PAGE_SIZE, SORT_OPTIONS, queryFromParams, sortValue } from './gallery-query';
 import { ImageCard } from './image-card';
+import { ImageLightbox } from '../../shared/components/image-lightbox/image-lightbox';
 import { Icon } from '../../shared/components/icon/icon';
 
 @Component({
   selector: 'app-gallery-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ReactiveFormsModule, RouterLink, ImageCard, Pagination, EmptyState, Icon],
+  imports: [
+    ReactiveFormsModule,
+    RouterLink,
+    ImageCard,
+    Pagination,
+    EmptyState,
+    Icon,
+    ImageLightbox,
+  ],
   templateUrl: './gallery.page.html',
   styleUrl: './gallery.page.css',
 })
 export class GalleryPage {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
-  private readonly api = inject(ImageApiService);
+  protected readonly api = inject(ImageApiService);
+  protected readonly viewingIndex = signal<number | null>(null);
+  protected readonly viewing = computed(() => {
+    const index = this.viewingIndex();
+    return index !== null && this.images.hasValue()
+      ? (this.images.value().items[index] ?? null)
+      : null;
+  });
   private readonly confirm = inject(ConfirmService);
   private readonly notifications = inject(NotificationService);
   private readonly destroyRef = inject(DestroyRef);
@@ -82,7 +99,10 @@ export class GalleryPage {
 
   protected goToPage(page: number): void {
     this.updateQuery({ page: page > 1 ? page : null });
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.scrollTo({
+      top: 0,
+      behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
+    });
   }
 
   protected clearFilters(): void {
@@ -119,6 +139,7 @@ export class GalleryPage {
   }
 
   private updateQuery(changes: Params): void {
+    this.viewingIndex.set(null);
     void this.router.navigate([], {
       relativeTo: this.route,
       queryParams: changes,

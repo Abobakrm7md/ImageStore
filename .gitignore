@@ -18,6 +18,7 @@ publish/
 
 # ---- Angular / Node ----
 client/node_modules/
+e2e/node_modules/
 client/dist/
 client/.angular/
 client/coverage/

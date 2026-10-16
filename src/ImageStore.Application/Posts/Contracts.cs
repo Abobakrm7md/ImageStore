@@ -73,10 +73,11 @@ public sealed record CommentDto(
     DateTime CreatedAtUtc,
     DateTime? UpdatedAtUtc,
     bool IsMine,
-    bool CanDelete);
+    bool CanDelete,
+    Guid? ParentCommentId = null);
 
 /// <summary>Adds a comment. Empty or whitespace-only content is rejected.</summary>
-public sealed record CreateCommentRequest(string? Content);
+public sealed record CreateCommentRequest(string? Content, Guid? ParentCommentId = null);
 
 /// <summary>Replaces the content of a comment.</summary>
 public sealed record UpdateCommentRequest(string? Content);

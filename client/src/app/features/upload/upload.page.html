@@ -1,6 +1,7 @@
-<section class="page">
+<section class="page upload-page">
   <header class="page-header">
     <div>
+      <span class="eyebrow">Make room for something beautiful</span>
       <h1>Upload images</h1>
       <p class="muted">
         @if (policy.hasValue()) {
@@ -49,7 +50,7 @@
       <button type="button" class="btn btn-primary" (click)="fileInput.click()">
         Choose files
       </button>
-      <p class="hint">Files are checked again on the server before they are stored.</p>
+      <p class="hint">Your originals stay private until you choose to publish a post.</p>
     </div>
 
     @if (items().length) {

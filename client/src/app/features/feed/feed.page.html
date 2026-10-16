@@ -1,19 +1,26 @@
 <section class="page feed-page">
-  <header class="page-header">
+  <header class="page-header feed-heading">
     <div>
-      <h1>Feed</h1>
-      <p class="muted" aria-live="polite">
-        @if (feed.hasValue()) {
-          {{ feed.value().totalCount }}
-          {{ feed.value().totalCount === 1 ? 'post' : 'posts' }} from people you follow
-        } @else {
-          &nbsp;
-        }
-      </p>
+      <span class="eyebrow">Your daily inspiration</span>
+      <h1>A different perspective.</h1>
+      <p>Images worth slowing down for. Stories from the people you follow.</p>
     </div>
-    <a class="btn btn-secondary" routerLink="/users"><app-icon name="users" [size]="18" /> Find people</a>
+    <div class="page-actions">
+      <a class="btn btn-secondary" routerLink="/users"
+        ><app-icon name="users" [size]="17" />Find people</a
+      ><a class="btn btn-primary" routerLink="/posts/new"
+        ><app-icon name="plus" [size]="17" />Create a post</a
+      >
+    </div>
   </header>
-
+  <div class="section-bar">
+    <strong>Following <span class="muted">/ Feed</span></strong
+    ><span class="muted" aria-live="polite">
+      @if (feed.hasValue()) {
+        {{ feed.value().totalCount }} {{ feed.value().totalCount === 1 ? 'post' : 'posts' }}
+      }</span
+    ><span class="feed-note"><app-icon name="image" [size]="15" /> A world through their lens</span>
+  </div>
   <div class="progress-track" [class.active]="feed.isLoading()" aria-hidden="true"></div>
 
   @if (feed.error()) {
@@ -45,8 +52,8 @@
       }
     } @else {
       <div class="post-list" [class.dimmed]="feed.isLoading()">
-        @for (post of result.items; track post.id) {
-          <app-post-card [post]="post" />
+        @for (post of result.items; track post.id; let first = $first) {
+          <app-post-card [post]="post" [featured]="first" />
         }
       </div>
       <app-pagination

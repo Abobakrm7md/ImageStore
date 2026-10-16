@@ -106,6 +106,7 @@ internal sealed class SocialRepository(ImageStoreDbContext dbContext) : ISocialR
         }
         catch (DbUpdateException exception) when (IsUniqueConstraintViolation(exception))
         {
+            dbContext.ChangeTracker.Clear();
             throw new ConflictException("The change conflicts with a concurrent update. Please retry.", exception);
         }
     }

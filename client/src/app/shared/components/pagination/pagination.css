@@ -15,9 +15,9 @@ ol {
   padding: 0;
 }
 
-.page {
-  min-width: 2.5rem;
-  height: 2.5rem;
+.page-button {
+  min-width: 2.75rem;
+  height: 2.75rem;
   border-radius: var(--radius-sm);
   border: 1px solid var(--color-border);
   background: var(--color-surface);
@@ -26,12 +26,12 @@ ol {
   cursor: pointer;
 }
 
-.page:hover {
+.page-button:hover {
   border-color: var(--color-primary);
 }
 
-.page.active {
-  background: var(--color-primary);
+.page-button.active {
+  background: var(--color-primary-solid);
   border-color: var(--color-primary);
   color: var(--color-on-primary);
   font-weight: 600;
@@ -40,7 +40,7 @@ ol {
 .gap {
   display: inline-flex;
   align-items: center;
-  height: 2.5rem;
+  height: 2.75rem;
   padding: 0 0.25rem;
   color: var(--color-text-muted);
 }

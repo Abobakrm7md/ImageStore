@@ -63,6 +63,7 @@ export class ImageDetailPage {
 
   protected readonly contentUrl = computed(() => this.api.contentUrl(this.id()));
   protected readonly downloadUrl = computed(() => this.api.downloadUrl(this.id()));
+  protected readonly previewBroken = signal(false);
   protected readonly lightboxOpen = signal(false);
   protected readonly saving = signal(false);
   protected readonly deleting = signal(false);
@@ -75,6 +76,11 @@ export class ImageDetailPage {
   });
 
   constructor() {
+    effect(() => {
+      this.id();
+      this.previewBroken.set(false);
+      this.lightboxOpen.set(false);
+    });
     // (Re)initialize the form whenever the image is loaded or replaced after saving.
     effect(() => {
       if (this.image.hasValue()) {

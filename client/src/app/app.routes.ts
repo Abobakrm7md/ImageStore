@@ -46,7 +46,8 @@ export const routes: Routes = [
       {
         path: '',
         title: 'People · ImageStore',
-        loadComponent: () => import('./features/users/user-search.page').then((m) => m.UserSearchPage),
+        loadComponent: () =>
+          import('./features/users/user-search.page').then((m) => m.UserSearchPage),
       },
       {
         path: ':id',
@@ -57,16 +58,27 @@ export const routes: Routes = [
       {
         path: ':id/followers',
         title: 'Followers · ImageStore',
-        loadComponent: () =>
-          import('./features/users/user-list.page').then((m) => m.UserListPage),
+        loadComponent: () => import('./features/users/user-list.page').then((m) => m.UserListPage),
       },
       {
         path: ':id/following',
         title: 'Following · ImageStore',
-        loadComponent: () =>
-          import('./features/users/user-list.page').then((m) => m.UserListPage),
+        loadComponent: () => import('./features/users/user-list.page').then((m) => m.UserListPage),
       },
     ],
+  },
+  {
+    path: 'notifications',
+    title: 'Notifications · ImageStore',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/notifications/notifications.page').then((m) => m.NotificationsPage),
+  },
+  {
+    path: 'chat',
+    title: 'Messages · ImageStore',
+    canActivate: [authGuard],
+    loadComponent: () => import('./features/chat/chat.page').then((m) => m.ChatPage),
   },
   {
     path: 'account',

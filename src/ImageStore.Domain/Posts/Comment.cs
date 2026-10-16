@@ -13,6 +13,8 @@ public sealed class Comment
 
     public Guid Id { get; private set; }
 
+    public Guid? ParentCommentId { get; private set; }
+
     public Guid PostId { get; private set; }
 
     public Guid AuthorUserId { get; private set; }
@@ -26,7 +28,7 @@ public sealed class Comment
     /// <summary>The author's profile, loaded on demand.</summary>
     public UserProfile? Author { get; private set; }
 
-    public static Comment Create(Guid id, Guid postId, Guid authorUserId, string content, DateTime createdAtUtc)
+    public static Comment Create(Guid id, Guid postId, Guid authorUserId, string content, DateTime createdAtUtc, Guid? parentCommentId = null)
     {
         if (id == Guid.Empty)
         {
@@ -47,6 +49,7 @@ public sealed class Comment
         {
             Id = id,
             PostId = postId,
+            ParentCommentId = parentCommentId,
             AuthorUserId = authorUserId,
             Content = NormalizeContent(content),
             CreatedAtUtc = EnsureUtc(createdAtUtc, "createdAtUtc"),

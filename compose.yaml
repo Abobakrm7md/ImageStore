@@ -1,0 +1,34 @@
+services:
+  api:
+    build: .
+    restart: unless-stopped
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ConnectionStrings__ImageStore: ${IMAGESTORE_SQL_CONNECTION:?Set the external SQL Server connection string}
+      Database__Provider: SqlServer
+      Database__ApplyMigrationsOnStartup: "false"
+      Storage__RootPath: /data/uploads
+      DataProtection__KeysPath: /data/keys
+      ForwardedHeaders__Enabled: "true"
+      ForwardedHeaders__KnownNetworks__0: 172.29.73.0/24
+    volumes:
+      - uploads:/data/uploads
+      - keys:/data/keys
+    networks: [application]
+  nginx:
+    image: nginx:stable-alpine
+    restart: unless-stopped
+    depends_on: [api]
+    ports: ["443:443"]
+    volumes:
+      - ./deploy/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ${IMAGESTORE_TLS_DIR:?Directory containing fullchain.pem and privkey.pem}:/etc/nginx/tls:ro
+    networks: [application]
+volumes:
+  uploads:
+  keys:
+networks:
+  application:
+    ipam:
+      config:
+        - subnet: 172.29.73.0/24

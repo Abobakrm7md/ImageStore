@@ -232,3 +232,13 @@ Design decisions:
 | Integration (xUnit)       | The real HTTP pipeline via `WebApplicationFactory`: registration/login/logout, cookie flags, CSRF enforcement and user binding, 401 for every protected endpoint, uploads of all formats, invalid/oversized/malicious uploads, 413, cross-user access, pagination/search/sort/tag filter, edits, deletion, tampered storage paths, Problem Details, security headers, Swagger, health, migrations-vs-model, SQL translation, maintenance, concurrent tag creation, **plus the social surface:** follow/unfollow (idempotency, self-follow, duplicates), feed filtering & deterministic pagination, access revocation after unfollowing (details/content/download/comments/reactions → 404), cross-user post edit/delete, comment authorization & moderation, reaction lifecycle & uniqueness (incl. repeated requests), profile pictures, storage persistence across host restarts. |
 | Frontend (Vitest)         | Utilities and validators (incl. reactions/initials), Problem Details parsing, auth service, guards, interceptor (401 redirect, CSRF refresh-and-retry), gallery URL state, pagination, upload queue (concurrency, progress, rejected vs failed), social/post API clients, `FollowButton` and `ReactionBar` behaviour (toggle, change, remove, error paths). |
 | Browser smoke test        | `e2e/smoke.mjs` drives Chrome through the complete user journey including mobile layout, and fails on console errors or 5xx responses.                                                                                                            |
+
+## Notifications
+
+The [notification system](notifications.md) stages inbox/outbox records in the same EF unit of work
+as new chat messages, follows, comments and reactions. A centralized application creation policy
+handles self-suppression and stable event identity; the infrastructure event bridge maps newly added
+domain rows at SaveChanges. A small SQL-backed dispatcher emits recipient-only invalidations on the
+existing SignalR hub. This is an at-least-once live hint over durable REST history, not an in-memory
+notification store. Preferences govern presentation rather than storage. Current access is rechecked
+when projecting destination identifiers.

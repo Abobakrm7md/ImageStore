@@ -317,3 +317,23 @@ stable .NET 10 releases; to adopt the latest servicing patch, bump the versions 
 - File/metadata consistency is best-effort across two systems; see
   [docs/architecture.md](docs/architecture.md#file-and-database-consistency) for the strategy and
   the remaining edge cases.
+
+## Private messaging
+
+Authenticated users can open **Messages**, start a chat from a person's profile, and share a
+post using **Share in message**. Chat includes persistent paged history, unread counts/read
+receipts, typing, reconnect recovery, and one shared cookie-authenticated SignalR connection.
+See [chat architecture, API, deployment and tests](docs/chat.md) for migration instructions,
+status semantics and operational limitations. The root `compose.yaml` runs the existing app
+behind TLS Nginx with an **external SQL Server** and persistent uploads/authentication keys.
+
+## Notification center
+
+The **Notifications** bell provides persistent, real-time activity for private messages/shared posts,
+follows, comments, replies, mentions, reactions and important announcements. Open the notification
+center to filter activity, mark it read, clear it, or configure categories and optional sound.
+Preferences persist across sessions; Web Audio respects browser interaction requirements.
+
+See [notification architecture, API, reliability, setup and Web Push roadmap](docs/notifications.md).
+Apply the `AddNotifications` migration before deployment. The feature reuses the existing SignalR
+connection, Docker/Nginx configuration and external SQL Server; Web Push is explicitly deferred.

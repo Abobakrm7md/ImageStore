@@ -189,3 +189,16 @@ only (`StorageMaintenance__Enabled=false` elsewhere).
 - [ ] Swagger disabled (default outside Development) and `Cors:AllowedOrigins` empty for same-origin hosting.
 - [ ] Reverse-proxy body-size limit aligned with the upload limits.
 - [ ] Optional: antivirus / content scanning of uploads (not included).
+
+## Chat / Docker
+
+The root `Dockerfile`, `compose.yaml`, and `deploy/nginx.conf` provide a single-instance deployment
+of this same API/SPA with external SQL Server. See [chat deployment](chat.md#migration-and-deployment)
+for TLS, persistent keys, migration commands, WebSocket proxying, and multi-instance requirements.
+
+## Notification inbox and outbox
+
+Apply `20261016180000_AddNotifications` after the chat migration. The existing `/api` and `/api/chat`
+Nginx routes already handle the notification API and real-time events. No additional container,
+database, sound asset host or secret is needed. See [notification operations](notifications.md#deployment)
+for dispatch/retention behavior, scale-out requirements, validation and the explicitly deferred Web Push work.

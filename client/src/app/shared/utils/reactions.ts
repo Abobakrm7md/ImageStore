@@ -1,19 +1,21 @@
+import { IconName } from '../components/icon/icon';
 import { ReactionType } from '../../core/models/api.models';
 
 export interface ReactionMeta {
   type: ReactionType;
   emoji: string;
+  icon: IconName;
   label: string;
 }
 
 /** The six supported reactions, in the same order the API reports them. */
 export const REACTIONS: readonly ReactionMeta[] = [
-  { type: 'like', emoji: '👍', label: 'Like' },
-  { type: 'love', emoji: '❤️', label: 'Love' },
-  { type: 'laugh', emoji: '😂', label: 'Laugh' },
-  { type: 'wow', emoji: '😮', label: 'Wow' },
-  { type: 'sad', emoji: '😢', label: 'Sad' },
-  { type: 'dislike', emoji: '👎', label: 'Dislike' },
+  { type: 'like', icon: 'thumb-up', emoji: '👍', label: 'Like' },
+  { type: 'love', icon: 'heart', emoji: '❤️', label: 'Love' },
+  { type: 'laugh', icon: 'smile', emoji: '😂', label: 'Laugh' },
+  { type: 'wow', icon: 'surprised', emoji: '😮', label: 'Wow' },
+  { type: 'sad', icon: 'sad', emoji: '😢', label: 'Sad' },
+  { type: 'dislike', icon: 'thumb-down', emoji: '👎', label: 'Dislike' },
 ];
 
 const BY_TYPE = new Map<ReactionType, ReactionMeta>(REACTIONS.map((meta) => [meta.type, meta]));

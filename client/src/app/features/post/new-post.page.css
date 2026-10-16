@@ -1,5 +1,5 @@
 .new-post-page {
-  max-width: 56rem;
+  max-width: var(--reading-width);
 }
 
 .page-head {
@@ -64,7 +64,9 @@
   overflow: hidden;
   cursor: pointer;
   aspect-ratio: 1;
-  transition: border-color 0.15s ease, transform 0.15s ease;
+  transition:
+    border-color 0.15s ease,
+    transform 0.15s ease;
 }
 
 .picker-cell img {
@@ -92,7 +94,7 @@
   width: 1.6rem;
   height: 1.6rem;
   border-radius: 50%;
-  background: var(--color-primary);
+  background: var(--color-primary-solid);
   color: var(--color-on-primary);
   box-shadow: var(--shadow-sm);
 }

@@ -37,7 +37,9 @@
 
 .toast-message {
   flex: 1;
-  line-height: 1.4;
+  line-height: 1.6;
+  font-size: 0.85rem;
+  overflow-wrap: anywhere;
 }
 
 .toast-close {
@@ -45,7 +47,9 @@
   background: none;
   color: var(--color-text-muted);
   cursor: pointer;
-  padding: 0.125rem;
+  padding: 0.35rem;
+  min-width: 36px;
+  min-height: 36px;
   line-height: 0;
 }
 

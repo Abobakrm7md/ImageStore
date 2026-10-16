@@ -37,6 +37,8 @@ internal sealed partial class ApiExceptionHandler(
             ConflictException conflict => Create(StatusCodes.Status409Conflict, "Conflict", conflict.Message),
             BadHttpRequestException { StatusCode: StatusCodes.Status413PayloadTooLarge } =>
                 Create(StatusCodes.Status413PayloadTooLarge, "Payload too large", "The request body is too large."),
+            BadHttpRequestException { StatusCode: StatusCodes.Status429TooManyRequests } =>
+                Create(StatusCodes.Status429TooManyRequests, "Too many requests", "Too many chat operations. Try again shortly."),
             BadHttpRequestException badRequest => Create(badRequest.StatusCode, "Bad request", "The request could not be processed."),
             _ => null,
         };
