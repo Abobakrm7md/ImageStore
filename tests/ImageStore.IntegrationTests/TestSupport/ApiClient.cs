@@ -7,6 +7,8 @@ using ImageStore.Api.Contracts;
 using ImageStore.Application.Auth;
 using ImageStore.Application.Common;
 using ImageStore.Application.Images;
+using ImageStore.Application.Posts;
+using ImageStore.Application.Social;
 using ImageStore.UnitTests.TestSupport;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.Mvc.Testing.Handlers;
@@ -124,6 +126,46 @@ public sealed class ApiClient : IDisposable
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         return (await response.Content.ReadFromJsonAsync<PagedResult<ImageDto>>(Json))!;
     }
+
+    public Task<HttpResponseMessage> FollowAsync(Guid userId) =>
+        Http.PostAsync(new Uri($"/api/users/{userId}/follow", UriKind.Relative), content: null);
+
+    public Task<HttpResponseMessage> UnfollowAsync(Guid userId) =>
+        Http.DeleteAsync(new Uri($"/api/users/{userId}/follow", UriKind.Relative));
+
+    public async Task<UserProfileDto> GetProfileAsync(Guid userId)
+    {
+        var response = await Http.GetAsync(new Uri($"/api/users/{userId}", UriKind.Relative));
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        return (await response.Content.ReadFromJsonAsync<UserProfileDto>(Json))!;
+    }
+
+    /// <summary>Uploads a fixture image and publishes it as a post in one step.</summary>
+    public async Task<ImagePostDto> PostImageAsync(string fixture = "sample.png", string? title = null, string? description = null)
+    {
+        var image = await UploadSingleAsync(fixture, title, description);
+        return await CreatePostAsync(image.Id, title, description);
+    }
+
+    public async Task<ImagePostDto> CreatePostAsync(Guid imageId, string? title = null, string? description = null)
+    {
+        var response = await Http.PostAsJsonAsync("/api/posts", new CreatePostRequest(imageId, title, description), Json);
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+        return (await response.Content.ReadFromJsonAsync<ImagePostDto>(Json))!;
+    }
+
+    public async Task<PagedResult<ImagePostDto>> GetFeedAsync(string query = "")
+    {
+        var response = await Http.GetAsync(new Uri($"/api/feed{query}", UriKind.Relative));
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        return (await response.Content.ReadFromJsonAsync<PagedResult<ImagePostDto>>(Json))!;
+    }
+
+    public Task<HttpResponseMessage> ReactAsync(Guid postId, string reaction) =>
+        Http.PutAsJsonAsync($"/api/posts/{postId}/my-reaction", new SetReactionRequest(reaction), Json);
+
+    public Task<HttpResponseMessage> CommentAsync(Guid postId, string content) =>
+        Http.PostAsJsonAsync($"/api/posts/{postId}/comments", new CreateCommentRequest(content), Json);
 
     public void Dispose() => Http.Dispose();
 

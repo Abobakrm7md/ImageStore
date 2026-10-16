@@ -59,10 +59,10 @@ describe('toApiError', () => {
 describe('safeReturnUrl', () => {
   it.each([
     ['/images/123', '/images/123'],
-    [undefined, '/images'],
-    ['https://evil.example', '/images'],
-    ['//evil.example', '/images'],
-    ['/\\evil.example', '/images'],
+    [undefined, '/feed'],
+    ['https://evil.example', '/feed'],
+    ['//evil.example', '/feed'],
+    ['/\\evil.example', '/feed'],
   ])('maps %s to %s', (input, expected) => {
     expect(safeReturnUrl(input)).toBe(expected);
   });
@@ -152,7 +152,7 @@ describe('route guards', () => {
     const router = setup(true);
     expect(TestBed.runInInjectionContext(() => authGuard(route, state('/images')))).toBe(true);
     const result = TestBed.runInInjectionContext(() => guestGuard(route, state('/login')));
-    expect(router.serializeUrl(result as UrlTree)).toBe('/images');
+    expect(router.serializeUrl(result as UrlTree)).toBe('/feed');
   });
 });
 

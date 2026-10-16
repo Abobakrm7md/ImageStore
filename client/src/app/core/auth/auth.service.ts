@@ -78,7 +78,7 @@ export class AuthService {
 /** Only allow in-app return URLs, preventing open redirects through ?returnUrl=. */
 export function safeReturnUrl(value: string | null | undefined): string {
   if (!value || !value.startsWith('/') || value.startsWith('//') || value.startsWith('/\\')) {
-    return '/images';
+    return '/feed';
   }
 
   return value;

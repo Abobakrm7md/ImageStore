@@ -1,0 +1,236 @@
+<section class="page post-detail-page">
+  <a class="back-link" routerLink="/feed"><app-icon name="arrow-left" [size]="16" /> Back to feed</a>
+
+  @if (post.error() && !notFound()) {
+    <app-empty-state
+      heading="Couldn't load this post"
+      message="Check your connection and try again."
+      icon="alert"
+      tone="error"
+    >
+      <button type="button" class="btn btn-primary" (click)="post.reload()">Try again</button>
+    </app-empty-state>
+  } @else if (notFound()) {
+    <app-empty-state
+      heading="Post not found"
+      message="It may have been deleted, or it belongs to someone you don't follow."
+      icon="compass"
+    >
+      <a class="btn btn-primary" routerLink="/feed">Go to your feed</a>
+    </app-empty-state>
+  } @else if (post.hasValue()) {
+    @let item = post.value();
+    <article class="card post-article">
+      <header class="post-head">
+        <app-avatar [user]="item.author" [size]="44" />
+        <div class="post-head-text">
+          <a class="post-author" [routerLink]="['/users', item.author.id]">{{ item.author.displayName }}</a>
+          <p class="post-meta muted">
+            <span>&#64;{{ item.author.userName }}</span>
+            <span aria-hidden="true">·</span>
+            <time [attr.datetime]="item.createdAtUtc">{{ item.createdAtUtc | date: 'medium' }}</time>
+            @if (item.updatedAtUtc) {
+              <span>(edited)</span>
+            }
+          </p>
+        </div>
+        @if (item.isMine) {
+          <div class="post-management">
+            <button type="button" class="btn btn-ghost btn-sm" (click)="toggleEditMode()">
+              <app-icon name="edit" [size]="16" /> {{ editMode() ? 'Cancel' : 'Edit' }}
+            </button>
+            <button
+              type="button"
+              class="btn btn-ghost btn-sm btn-danger-text"
+              [disabled]="deletingPost()"
+              (click)="deletePost(item)"
+            >
+              <app-icon name="trash" [size]="16" /> Delete
+            </button>
+          </div>
+        }
+      </header>
+
+      @if (editMode()) {
+        <form class="post-edit card-body" [formGroup]="postForm" (ngSubmit)="savePost(item)">
+          <div class="form-field">
+            <label for="post-title">Title</label>
+            <input id="post-title" type="text" formControlName="title" maxlength="200" />
+            @if (postForm.controls.title.invalid && postForm.controls.title.touched) {
+              <p class="field-error">Title is required (max 200 characters).</p>
+            }
+          </div>
+          <div class="form-field">
+            <label for="post-description">Description <span class="optional">(optional)</span></label>
+            <textarea id="post-description" formControlName="description" rows="3" maxlength="2000"></textarea>
+          </div>
+          @if (postFormError()) {
+            <p class="field-error" role="alert">{{ postFormError() }}</p>
+          }
+          <div class="post-edit-actions">
+            <button type="submit" class="btn btn-primary btn-sm" [disabled]="savingPost()">
+              @if (savingPost()) {
+                <span class="spinner" aria-hidden="true"></span>
+              }
+              Save changes
+            </button>
+          </div>
+        </form>
+      }
+
+      <button
+        type="button"
+        class="post-image-button"
+        (click)="lightboxOpen.set(true)"
+        [attr.aria-label]="'Enlarge ' + item.title"
+      >
+        @if (!broken()) {
+          <img
+            [src]="contentUrl()"
+            [alt]="item.title"
+            decoding="async"
+            (error)="broken.set(true)"
+          />
+        } @else {
+          <span class="post-image-fallback"><app-icon name="image" [size]="44" /></span>
+        }
+      </button>
+
+      <div class="card-body">
+        <h1 class="post-title">{{ item.title }}</h1>
+        @if (item.description) {
+          <p class="post-description">{{ item.description }}</p>
+        }
+        <div class="post-footer">
+          <app-reaction-bar
+            [postId]="item.id"
+            [totalCount]="item.reactionCount"
+            [myReaction]="item.myReaction"
+            [counts]="item.reactionCounts"
+            (summaryChanged)="applySummary($event)"
+          />
+          <a class="btn btn-ghost btn-sm" [href]="api.downloadUrl(item.id)" download>
+            <app-icon name="download" [size]="16" /> Download
+          </a>
+        </div>
+      </div>
+    </article>
+
+    <app-image-lightbox
+      [src]="contentUrl()"
+      [alt]="item.title"
+      [open]="lightboxOpen()"
+      (closed)="lightboxOpen.set(false)"
+    />
+
+    <section class="comments" id="comments" aria-label="Comments">
+      <h2 class="section-title">{{ item.commentCount }} {{ item.commentCount === 1 ? 'comment' : 'comments' }}</h2>
+
+      <form class="comment-form card" (ngSubmit)="submitComment()">
+        <label class="visually-hidden" for="new-comment">Write a comment</label>
+        <textarea
+          id="new-comment"
+          [formControl]="commentControl"
+          rows="2"
+          maxlength="2000"
+          placeholder="Write a comment…"
+        ></textarea>
+        <div class="comment-form-actions">
+          @if (commentControl.invalid && commentControl.touched) {
+            <p class="field-error">A comment cannot be empty (max 2000 characters).</p>
+          }
+          <button type="submit" class="btn btn-primary btn-sm" [disabled]="sendingComment() || commentControl.invalid">
+            @if (sendingComment()) {
+              <span class="spinner" aria-hidden="true"></span>
+            }
+            <app-icon name="send" [size]="15" /> Comment
+          </button>
+        </div>
+      </form>
+
+      <div class="progress-track" [class.active]="comments.isLoading()" aria-hidden="true"></div>
+
+      @if (comments.error()) {
+        <app-empty-state heading="Couldn't load comments" icon="alert" tone="error">
+          <button type="button" class="btn btn-primary" (click)="comments.reload()">Try again</button>
+        </app-empty-state>
+      } @else if (comments.hasValue()) {
+        @let page = comments.value();
+        @if (page.items.length === 0) {
+          <p class="muted comments-empty">No comments yet – be the first to write one.</p>
+        } @else {
+          <ul class="comment-list">
+            @for (comment of page.items; track comment.id) {
+              <li class="comment card">
+                <app-avatar [user]="comment.author" [size]="34" />
+                <div class="comment-body">
+                  <p class="comment-head">
+                    <a [routerLink]="['/users', comment.author.id]">{{ comment.author.displayName }}</a>
+                    <span class="muted">&#64;{{ comment.author.userName }}</span>
+                    <time class="muted" [attr.datetime]="comment.createdAtUtc">{{
+                      comment.createdAtUtc | date: 'short'
+                    }}</time>
+                    @if (comment.updatedAtUtc) {
+                      <span class="muted">(edited)</span>
+                    }
+                  </p>
+                  @if (editingCommentId() === comment.id) {
+                    <form class="comment-edit" (ngSubmit)="saveComment(comment)">
+                      <textarea
+                        [formControl]="editCommentControl"
+                        rows="2"
+                        maxlength="2000"
+                        aria-label="Edit comment"
+                      ></textarea>
+                      <div class="comment-edit-actions">
+                        <button type="submit" class="btn btn-primary btn-sm" [disabled]="editCommentControl.invalid">Save</button>
+                        <button type="button" class="btn btn-ghost btn-sm" (click)="cancelEditComment()">Cancel</button>
+                      </div>
+                    </form>
+                  } @else {
+                    <p class="comment-content">{{ comment.content }}</p>
+                  }
+                </div>
+                @if (editingCommentId() !== comment.id) {
+                  <div class="comment-actions">
+                    @if (comment.isMine) {
+                      <button
+                        type="button"
+                        class="btn btn-ghost btn-sm"
+                        (click)="startEditComment(comment)"
+                        aria-label="Edit comment"
+                      >
+                        <app-icon name="edit" [size]="15" />
+                      </button>
+                    }
+                    @if (comment.canDelete) {
+                      <button
+                        type="button"
+                        class="btn btn-ghost btn-sm btn-danger-text"
+                        (click)="deleteComment(comment)"
+                        aria-label="Delete comment"
+                      >
+                        <app-icon name="trash" [size]="15" />
+                      </button>
+                    }
+                  </div>
+                }
+              </li>
+            }
+          </ul>
+          <app-pagination
+            [page]="page.page"
+            [totalPages]="page.totalPages"
+            (pageChange)="goToCommentsPage($event)"
+          />
+        }
+      }
+    </section>
+  } @else {
+    <div class="card post-article skeleton-card" aria-busy="true" aria-label="Loading post">
+      <div class="skeleton skeleton-line"></div>
+      <div class="skeleton skeleton-thumb"></div>
+      <div class="skeleton skeleton-line short"></div>
+    </div>
+  }
+</section>

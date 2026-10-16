@@ -1,0 +1,204 @@
+.post-detail-page {
+  max-width: 48rem;
+}
+
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: var(--color-text-muted);
+  text-decoration: none;
+  font-size: 0.9rem;
+  margin-bottom: 0.9rem;
+}
+
+.back-link:hover {
+  color: var(--color-primary);
+}
+
+.post-article {
+  overflow: hidden;
+}
+
+.post-head {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 1rem 1.1rem 0.7rem;
+}
+
+.post-head-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.post-author {
+  font-weight: 600;
+  color: var(--color-text);
+  text-decoration: none;
+}
+
+.post-author:hover {
+  color: var(--color-primary);
+  text-decoration: underline;
+}
+
+.post-meta {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+  flex-wrap: wrap;
+  margin: 0;
+  font-size: 0.83rem;
+}
+
+.post-management {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.post-edit {
+  border-top: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-surface-muted);
+}
+
+.post-edit-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.post-image-button {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: none;
+  border-block: 1px solid var(--color-border);
+  background: var(--color-checkerboard);
+  cursor: zoom-in;
+}
+
+.post-image-button img {
+  display: block;
+  width: 100%;
+  max-height: 40rem;
+  object-fit: contain;
+}
+
+.post-image-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 14rem;
+  color: var(--color-text-muted);
+}
+
+.post-title {
+  margin: 0 0 0.35rem;
+  font-size: 1.3rem;
+  overflow-wrap: anywhere;
+}
+
+.post-description {
+  margin: 0;
+  color: var(--color-text-muted);
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
+.post-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-top: 1rem;
+  flex-wrap: wrap;
+}
+
+.comments {
+  margin-top: 1.75rem;
+}
+
+.comment-form {
+  padding: 0.85rem 1rem;
+  margin-bottom: 1rem;
+}
+
+.comment-form textarea,
+.comment-edit textarea {
+  width: 100%;
+  resize: vertical;
+}
+
+.comment-form-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.comment-form-actions .field-error {
+  margin: 0 auto 0 0;
+}
+
+.comments-empty {
+  margin: 0.5rem 0 1rem;
+}
+
+.comment-list {
+  list-style: none;
+  margin: 0 0 1rem;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+
+.comment {
+  display: flex;
+  gap: 0.7rem;
+  padding: 0.8rem 1rem;
+  align-items: flex-start;
+}
+
+.comment-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.comment-head {
+  display: flex;
+  align-items: baseline;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+  margin: 0 0 0.2rem;
+  font-size: 0.85rem;
+}
+
+.comment-head a {
+  font-weight: 600;
+  color: var(--color-text);
+  text-decoration: none;
+}
+
+.comment-head a:hover {
+  color: var(--color-primary);
+}
+
+.comment-content {
+  margin: 0;
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
+.comment-actions {
+  display: flex;
+  gap: 0.15rem;
+}
+
+.comment-edit-actions {
+  display: flex;
+  gap: 0.4rem;
+  margin-top: 0.45rem;
+}

@@ -2,7 +2,7 @@ import { Routes } from '@angular/router';
 import { authGuard, guestGuard } from './core/auth/auth.guards';
 
 export const routes: Routes = [
-  { path: '', pathMatch: 'full', redirectTo: 'images' },
+  { path: '', pathMatch: 'full', redirectTo: 'feed' },
   {
     path: 'login',
     title: 'Sign in · ImageStore',
@@ -14,6 +14,65 @@ export const routes: Routes = [
     title: 'Create account · ImageStore',
     canActivate: [guestGuard],
     loadComponent: () => import('./features/auth/register.page').then((m) => m.RegisterPage),
+  },
+  {
+    path: 'feed',
+    title: 'Feed · ImageStore',
+    canActivate: [authGuard],
+    loadComponent: () => import('./features/feed/feed.page').then((m) => m.FeedPage),
+  },
+  {
+    path: 'posts',
+    canActivate: [authGuard],
+    children: [
+      {
+        // Must come before ':id' so the literal segment wins.
+        path: 'new',
+        title: 'New post · ImageStore',
+        loadComponent: () => import('./features/post/new-post.page').then((m) => m.NewPostPage),
+      },
+      {
+        path: ':id',
+        title: 'Post · ImageStore',
+        loadComponent: () =>
+          import('./features/post/post-detail.page').then((m) => m.PostDetailPage),
+      },
+    ],
+  },
+  {
+    path: 'users',
+    canActivate: [authGuard],
+    children: [
+      {
+        path: '',
+        title: 'People · ImageStore',
+        loadComponent: () => import('./features/users/user-search.page').then((m) => m.UserSearchPage),
+      },
+      {
+        path: ':id',
+        title: 'Profile · ImageStore',
+        loadComponent: () =>
+          import('./features/users/user-profile.page').then((m) => m.UserProfilePage),
+      },
+      {
+        path: ':id/followers',
+        title: 'Followers · ImageStore',
+        loadComponent: () =>
+          import('./features/users/user-list.page').then((m) => m.UserListPage),
+      },
+      {
+        path: ':id/following',
+        title: 'Following · ImageStore',
+        loadComponent: () =>
+          import('./features/users/user-list.page').then((m) => m.UserListPage),
+      },
+    ],
+  },
+  {
+    path: 'account',
+    title: 'My account · ImageStore',
+    canActivate: [authGuard],
+    loadComponent: () => import('./features/account/account.page').then((m) => m.AccountPage),
   },
   {
     path: 'images',

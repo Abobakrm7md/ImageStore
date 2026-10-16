@@ -1,6 +1,8 @@
 using ImageStore.Application.Auth;
 using ImageStore.Application.Images;
 using ImageStore.Application.Images.Validation;
+using ImageStore.Application.Posts;
+using ImageStore.Application.Social;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
@@ -19,6 +21,10 @@ public static class DependencyInjection
         services.TryAddEnumerable(ServiceDescriptor.Singleton<IValidateOptions<ImageUploadOptions>, ImageUploadOptionsValidator>());
         services.AddScoped<IImageService, ImageService>();
         services.AddScoped<IAuthService, AuthService>();
+        services.AddScoped<ISocialService, SocialService>();
+        services.AddScoped<IPostService, PostService>();
+        services.AddScoped<ICommentService, CommentService>();
+        services.AddScoped<IReactionService, ReactionService>();
         return services;
     }
 }

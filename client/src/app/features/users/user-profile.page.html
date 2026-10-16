@@ -1,0 +1,115 @@
+<section class="page profile-page">
+  @if (profile.error() && !notFound()) {
+    <app-empty-state
+      heading="Couldn't load this profile"
+      message="Check your connection and try again."
+      icon="alert"
+      tone="error"
+    >
+      <button type="button" class="btn btn-primary" (click)="profile.reload()">Try again</button>
+    </app-empty-state>
+  } @else if (notFound()) {
+    <app-empty-state heading="User not found" message="This account does not exist." icon="compass">
+      <a class="btn btn-primary" routerLink="/users">Find people</a>
+    </app-empty-state>
+  } @else if (profile.hasValue()) {
+    @let person = profile.value();
+    <header class="profile-head card">
+      <app-avatar [user]="person" [size]="88" />
+      <div class="profile-identity">
+        <h1>{{ person.displayName }}</h1>
+        <p class="muted profile-username">&#64;{{ person.userName }}</p>
+        @if (person.bio) {
+          <p class="profile-bio">{{ person.bio }}</p>
+        }
+        <p class="muted profile-since">Member since {{ person.createdAtUtc | date: 'MMMM yyyy' }}</p>
+      </div>
+      <div class="profile-actions">
+        @if (person.isCurrentUser) {
+          <a class="btn btn-secondary btn-sm" routerLink="/account">
+            <app-icon name="edit" [size]="16" /> Edit profile
+          </a>
+          <a class="btn btn-primary btn-sm" routerLink="/posts/new">
+            <app-icon name="plus" [size]="16" /> New post
+          </a>
+        } @else {
+          <app-follow-button
+            [userId]="person.id"
+            [following]="isFollowing()"
+            (changed)="onFollowChanged($event)"
+          />
+        }
+      </div>
+      <nav class="profile-counts" aria-label="Profile statistics">
+        <a [routerLink]="['/users', person.id, 'followers']">
+          <strong>{{ person.followerCount }}</strong>
+          {{ person.followerCount === 1 ? 'follower' : 'followers' }}
+        </a>
+        <a [routerLink]="['/users', person.id, 'following']">
+          <strong>{{ person.followingCount }}</strong>
+          following
+        </a>
+        <span class="count-static">
+          <strong>{{ person.postCount }}</strong>
+          {{ person.postCount === 1 ? 'post' : 'posts' }}
+        </span>
+      </nav>
+    </header>
+
+    <section class="profile-posts" aria-label="Published posts">
+      <h2 class="section-title">Posts</h2>
+
+      @if (!postsVisible()) {
+        <app-empty-state
+          heading="Posts are visible to followers"
+          [message]="'Follow @' + person.userName + ' to see their image posts in your feed and here.'"
+          icon="compass"
+        />
+      } @else if (userPosts.error()) {
+        <app-empty-state heading="Couldn't load posts" icon="alert" tone="error">
+          <button type="button" class="btn btn-primary" (click)="userPosts.reload()">Try again</button>
+        </app-empty-state>
+      } @else if (userPosts.hasValue()) {
+        @let result = userPosts.value();
+        @if (result.items.length === 0) {
+          <app-empty-state
+            [heading]="person.isCurrentUser ? 'You haven’t posted anything yet' : 'No posts yet'"
+            [message]="
+              person.isCurrentUser
+                ? 'Publish one of your images and it will appear in your followers’ feeds.'
+                : 'When ' + person.displayName + ' publishes an image post, it will show up here.'
+            "
+            icon="image"
+          >
+            @if (person.isCurrentUser) {
+              <a class="btn btn-primary" routerLink="/posts/new">Create a post</a>
+            }
+          </app-empty-state>
+        } @else {
+          <div class="profile-post-grid" [class.dimmed]="userPosts.isLoading()">
+            @for (post of result.items; track post.id) {
+              <app-post-card [post]="post" />
+            }
+          </div>
+          <app-pagination
+            [page]="result.page"
+            [totalPages]="result.totalPages"
+            (pageChange)="goToPostsPage($event)"
+          />
+        }
+      } @else {
+        <div class="profile-post-grid" aria-busy="true" aria-label="Loading posts">
+          <div class="skeleton-card card">
+            <div class="skeleton skeleton-thumb"></div>
+            <div class="skeleton skeleton-line"></div>
+          </div>
+        </div>
+      }
+    </section>
+  } @else {
+    <div class="profile-head card skeleton-card" aria-busy="true" aria-label="Loading profile">
+      <div class="skeleton skeleton-line"></div>
+      <div class="skeleton skeleton-line short"></div>
+    </div>
+  }
+</section>

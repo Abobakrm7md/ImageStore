@@ -30,7 +30,7 @@ Base path: `/api`. Interactive documentation: **`/swagger`** (enabled in Develop
 | ------ | --------------------------------------------------------------------------------------- |
 | 400    | Validation error, malformed request, or invalid/missing anti-forgery token (`code: "antiforgery_validation_failed"`) |
 | 401    | Not authenticated (or invalid credentials on login)                                     |
-| 404    | Not found – also returned for images owned by another user                              |
+| 404    | Not found – also returned for resources owned by/hidden from another user (images, posts, comments) |
 | 409    | Concurrent conflicting change; retry                                                    |
 | 413    | Upload request larger than the configured limits                                        |
 | 415    | Wrong content type (e.g. JSON sent to the upload endpoint)                              |
@@ -148,7 +148,180 @@ Same bytes with `Content-Disposition: attachment; filename*=UTF-8''<original nam
 }
 ```
 
+## Users & following
+
+All endpoints require authentication. Every `isFollowing` flag in a response is **viewer-relative**:
+it describes whether the *calling* user follows the given user.
+
+### User summary (list item)
+```json
+{
+  "id": "01a13f28-a2bf-7ff6-9409-e3a28b48d8cb",
+  "userName": "alice",
+  "displayName": "Alice Example",
+  "hasProfilePicture": true,
+  "isFollowing": false
+}
+```
+
+### `GET /api/users` → `200`
+Searches profiles. Query: `page`, `pageSize` (default 12, max 100), `search` (optional,
+case-insensitive substring of user name or display name, max 100 chars; `%`, `_`, `[` are
+literal). Ordered by user name. Response: `PagedResult<UserSummary>`.
+
+### `GET /api/users/me` → `200` / `PUT /api/users/me` → `200`
+The caller's own profile. `PUT` body: `{ "displayName": "Alice", "bio": "Photographer" }`
+(display name required, ≤ 100; bio optional ≤ 500, empty clears). The user name cannot change.
+Returns the updated profile.
+
+### Profile resource
+```json
+{
+  "id": "…", "userName": "alice", "displayName": "Alice Example", "bio": "Photographer",
+  "hasProfilePicture": true, "followerCount": 12, "followingCount": 7, "postCount": 3,
+  "isFollowing": false, "isCurrentUser": false, "createdAtUtc": "2026-10-15T10:43:10.1107Z"
+}
+```
+`postCount` is only meaningful when the caller may see the posts (the user themself or a
+follower); for everyone else it is `0`.
+
+### `GET /api/users/{id}` → `200` / `404`
+
+### `PUT /api/users/me/profile-picture` → `200`
+`multipart/form-data` with a single `file` field: JPEG, PNG, WebP or GIF, ≤ 2 MiB, verified by
+content (not just extension). Replaces any existing picture. Returns the updated profile.
+
+### `DELETE /api/users/me/profile-picture` → `204`
+Removes the picture; the profile falls back to an initials avatar.
+
+### `GET /api/users/{id}/profile-picture` → `200` / `404`
+Streams the picture bytes with `Cache-Control: private, no-cache` and an `ETag` that changes when
+the picture is replaced (send `If-None-Match` for `304`). `404` when the user has no picture.
+Pictures are never exposed as public static files.
+
+### `POST /api/users/{id}/follow` → `204`
+Follows a user. Idempotent: following again is not an error. `400` when `{id}` is the caller
+(self-follow), `404` when the user does not exist.
+
+### `DELETE /api/users/{id}/follow` → `204`
+Unfollows. Idempotent: unfollowing a user you do not follow also returns `204`. Unfollowing
+immediately revokes feed access, post details, image bytes, comments and reactions of that
+user's posts (they answer `404` afterwards).
+
+### `GET /api/users/{id}/followers` / `GET /api/users/{id}/following` → `200` / `404`
+Paginated `PagedResult<UserSummary>`, newest follow first.
+
+### `GET /api/users/{id}/posts` → `200` / `404`
+The user's published posts, newest first, as `PagedResult<ImagePost>`. **`404` unless the caller
+is the user or follows them** – the published gallery is private to followers.
+
+## Feed
+
+### `GET /api/feed` → `200`
+The personalized feed: posts of everyone the caller follows, **strictly newest first**
+(`createdAtUtc DESC, id DESC` – deterministic, no ranking algorithm), server-side paginated with
+`page`/`pageSize` (default 10, max 100). Every item includes author info, comment count, total
+and per-type reaction counts and the caller's own reaction. Following/unfollowing changes the
+feed immediately; no duplicates or gaps across pages for stable data.
+
+## Posts
+
+A post publishes one image from the caller's library to their followers. Visibility everywhere
+(details, image bytes, download, comments, reactions): **the author or a follower** – everyone
+else gets `404` (not `403`, to avoid leaking existence).
+
+### Post resource
+```json
+{
+  "id": "…", "title": "Beach sunset", "description": "Summer trip",
+  "createdAtUtc": "2026-10-15T10:43:10.1107Z", "updatedAtUtc": null,
+  "author": { "id": "…", "userName": "alice", "displayName": "Alice Example", "hasProfilePicture": true },
+  "image": { "imageId": "…", "contentType": "image/jpeg", "width": 1200, "height": 800 },
+  "commentCount": 2, "reactionCount": 3,
+  "reactionCounts": [ { "reaction": "like", "count": 2 }, { "reaction": "love", "count": 1 },
+                      { "reaction": "laugh", "count": 0 }, { "reaction": "wow", "count": 0 },
+                      { "reaction": "sad", "count": 0 }, { "reaction": "dislike", "count": 0 } ],
+  "myReaction": "love", "isMine": false
+}
+```
+
+### `POST /api/posts` → `201`
+```json
+{ "imageId": "…", "title": "Beach sunset", "description": "Summer trip" }
+```
+`imageId` must be an image **owned by the caller** (anything else is `404`). `title` defaults to
+the image title (≤ 200); `description` optional (≤ 2000). Each image can only be published once:
+`409` if it already has a post. `Location` header points at the new post.
+
+### `GET /api/posts/{id}` → `200` / `404`
+
+### `PUT /api/posts/{id}` → `200` / `404`
+Edits title/description of **your own** post (the image cannot be replaced). Anyone else gets
+`404`.
+
+### `DELETE /api/posts/{id}` → `204` / `404`
+Deletes your own post together with all its comments and reactions (database cascade). The
+underlying image **stays in your library** (with its file); it simply becomes unpublished and can
+be posted again.
+
+### `GET /api/posts/{id}/content` → `200` / `404`
+The post image bytes for display: verified `Content-Type`, `Content-Disposition: inline`,
+`Cache-Control: private, no-cache`, `ETag`, `Accept-Ranges`. Same visibility rules as the post –
+unfollowing revokes access. There are no public/static image URLs.
+
+### `GET /api/posts/{id}/download` → `200` / `404`
+Same bytes with `Content-Disposition: attachment`.
+
+## Comments
+
+### Comment resource
+```json
+{
+  "id": "…", "postId": "…",
+  "author": { "id": "…", "userName": "bob", "displayName": "Bob", "hasProfilePicture": false },
+  "content": "Great shot!", "createdAtUtc": "…", "updatedAtUtc": null,
+  "isMine": true, "canDelete": true
+}
+```
+`isMine`: written by the caller (edit + delete). `canDelete`: the caller is the comment author
+**or the post author** (moderation – post owners may delete any comment on their posts, but never
+edit someone else's).
+
+### `GET /api/posts/{postId}/comments` → `200` / `404`
+Oldest first, paginated (default 20, max 100). Requires post access.
+
+### `POST /api/posts/{postId}/comments` → `201`
+`{ "content": "Great shot!" }` – required, non-whitespace, ≤ 2000 characters. Requires post
+access (commenting on posts you cannot see is `404`).
+
+### `PUT /api/posts/{postId}/comments/{commentId}` → `200` / `404`
+Replaces the content; **author only** (post owners cannot edit foreign comments).
+
+### `DELETE /api/posts/{postId}/comments/{commentId}` → `204` / `404`
+By the comment author or the post author (moderation).
+
+## Reactions
+
+Six stable reaction types (stored as an enum, serialized camelCase): `like`, `love`, `laugh`,
+`wow`, `sad`, `dislike`. Each user has **at most one active reaction per post**, enforced by a
+unique index on `(postId, userId)`.
+
+### `GET /api/posts/{postId}/reactions` → `200` / `404`
+```json
+{ "totalCount": 3, "counts": [ { "reaction": "like", "count": 2 }, … ], "myReaction": "love" }
+```
+`counts` always lists all six types (zeros included). Requires post access.
+
+### `PUT /api/posts/{postId}/my-reaction` → `200` / `400` / `404`
+`{ "reaction": "wow" }` – adds the reaction, or **changes** an existing one (still exactly one
+row). Unknown values, numbers or `null` are `400`. Safe under duplicate/concurrent requests: a
+uniqueness violation is retried once and answered idempotently. Returns the fresh summary.
+
+### `DELETE /api/posts/{postId}/my-reaction` → `204` / `404`
+Removes the caller's reaction; idempotent (`204` even without a reaction).
+
 ## Health
+
 
 ### `GET /health` → `200 Healthy` / `503 Unhealthy`
 Checks database connectivity and that the storage root is writable. No details are exposed.
@@ -168,4 +341,10 @@ curl -s -c "$JAR" -b "$JAR" -H "X-XSRF-TOKEN: $(xsrf)" \
      -F "files=@holiday.jpg" -F "tags=travel" "$BASE/api/images"
 
 curl -s -b "$JAR" "$BASE/api/images?search=holiday&page=1&pageSize=12"
+
+# publish an image as a post, follow someone, read the feed
+curl -s -c "$JAR" -b "$JAR" -H "X-XSRF-TOKEN: $(xsrf)" -H 'Content-Type: application/json' \
+     -d '{"imageId":"<image-id>","title":"Beach sunset"}' "$BASE/api/posts"
+curl -s -c "$JAR" -b "$JAR" -H "X-XSRF-TOKEN: $(xsrf)" -X POST "$BASE/api/users/<user-id>/follow"
+curl -s -b "$JAR" "$BASE/api/feed?page=1&pageSize=10"
 ```

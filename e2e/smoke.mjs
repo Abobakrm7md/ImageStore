@@ -72,9 +72,9 @@ try {
   await clearField('#register-confirm');
   await page.type('#register-confirm', 'Gallery2026');
   await Promise.all([page.waitForNavigation({ waitUntil: 'networkidle0' }), page.click('button[type=submit]')]);
-  await waitText('No images yet');
-  check('registration signs in and shows the empty gallery', page.url().endsWith('/images'), page.url());
-  await shot('03-empty-gallery');
+  await waitText('Your feed is empty');
+  check('registration signs in and shows the empty feed', page.url().endsWith('/feed'), page.url());
+  await shot('03-empty-feed');
 
   // 3. Upload: three valid images + one fake image.
   await page.goto(`${BASE}/images/upload`, { waitUntil: 'networkidle0' });

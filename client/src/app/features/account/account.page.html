@@ -1,0 +1,105 @@
+<section class="page account-page">
+  <header class="page-head">
+    <h1>My account</h1>
+  </header>
+
+  @if (profile.error()) {
+    <app-empty-state
+      heading="Couldn't load your profile"
+      message="Check your connection and try again."
+      icon="alert"
+      tone="error"
+    >
+      <button type="button" class="btn btn-primary" (click)="profile.reload()">Try again</button>
+    </app-empty-state>
+  } @else if (profile.hasValue()) {
+    @let person = profile.value();
+
+    <section class="card account-picture" aria-labelledby="picture-title">
+      <h2 id="picture-title" class="account-section-title">Profile picture</h2>
+      <div class="picture-row">
+        <app-avatar [user]="person" [size]="80" />
+        <div class="picture-actions">
+          <button
+            type="button"
+            class="btn btn-secondary btn-sm"
+            [disabled]="uploadingPicture()"
+            (click)="pickPicture()"
+          >
+            <app-icon name="image" [size]="16" />
+            {{ person.hasProfilePicture ? 'Replace picture' : 'Upload picture' }}
+          </button>
+          @if (person.hasProfilePicture) {
+            <button
+              type="button"
+              class="btn btn-ghost btn-sm"
+              [disabled]="uploadingPicture()"
+              (click)="removePicture()"
+            >
+              <app-icon name="trash" [size]="16" /> Remove
+            </button>
+          }
+          <p class="muted picture-hint">JPG, PNG, WebP or GIF · up to 2 MB</p>
+          @if (uploadingPicture()) {
+            <div class="progress-track" role="progressbar" aria-label="Updating picture"></div>
+          }
+          @if (pictureError(); as error) {
+            <p class="field-error" role="alert">{{ error }}</p>
+          }
+          <input
+            #pictureInput
+            type="file"
+            accept="image/*"
+            class="visually-hidden"
+            (change)="onPictureSelected($event)"
+          />
+        </div>
+      </div>
+    </section>
+
+    <form class="card account-form" [formGroup]="form" (ngSubmit)="save()" aria-labelledby="details-title">
+      <h2 id="details-title" class="account-section-title">Profile details</h2>
+
+      <div class="form-field">
+        <label for="username">Username</label>
+        <input id="username" type="text" [value]="person.userName" disabled />
+        <p class="muted field-hint">Usernames can't be changed after registration.</p>
+      </div>
+
+      <div class="form-field">
+        <label for="displayName">Display name</label>
+        <input id="displayName" type="text" formControlName="displayName" autocomplete="name" />
+        @if (form.controls.displayName.invalid) {
+          <app-field-error [control]="form.controls.displayName" label="Display name" />
+        }
+      </div>
+
+      <div class="form-field">
+        <label for="bio">Bio <span class="muted">(optional)</span></label>
+        <textarea id="bio" rows="4" formControlName="bio" placeholder="Tell people a little about yourself…"></textarea>
+        @if (form.controls.bio.invalid) {
+          <app-field-error [control]="form.controls.bio" label="Bio" />
+        }
+      </div>
+
+      @if (saveError(); as error) {
+        <p class="field-error" role="alert">{{ error }}</p>
+      }
+
+      <div class="account-form-actions">
+        @if (saving()) {
+          <div class="progress-track progress-inline" role="progressbar" aria-label="Saving profile"></div>
+        }
+        <a class="btn btn-ghost" [routerLink]="['/users', person.id]">View public profile</a>
+        <button type="submit" class="btn btn-primary" [disabled]="saving() || form.pristine">
+          {{ saving() ? 'Saving…' : 'Save changes' }}
+        </button>
+      </div>
+    </form>
+  } @else {
+    <div class="card account-form skeleton-card" aria-busy="true" aria-label="Loading profile">
+      <div class="skeleton skeleton-line"></div>
+      <div class="skeleton skeleton-line short"></div>
+    </div>
+  }
+</section>

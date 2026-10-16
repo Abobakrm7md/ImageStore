@@ -22,8 +22,25 @@ public class ImageStoreApiFactory : WebApplicationFactory<Program>
     public const int MaxFilesPerRequest = 3;
 
     private readonly string _testRoot = Path.Combine(Path.GetTempPath(), "imagestore-it", Guid.NewGuid().ToString("N"));
+    private readonly string? _sharedStorageRoot;
+    private readonly string? _sharedDatabaseName;
 
-    public string StorageRoot => Path.Combine(_testRoot, "uploads");
+    /// <summary>Default host with an isolated database and temporary storage.</summary>
+    public ImageStoreApiFactory()
+    {
+    }
+
+    /// <summary>
+    /// Host on an explicit storage root and in-memory database name, so several instances can
+    /// simulate application restarts against the same persistent state.
+    /// </summary>
+    public ImageStoreApiFactory(string storageRoot, string inMemoryDatabaseName)
+    {
+        _sharedStorageRoot = storageRoot;
+        _sharedDatabaseName = inMemoryDatabaseName;
+    }
+
+    public string StorageRoot => _sharedStorageRoot ?? Path.Combine(_testRoot, "uploads");
 
     public FailingSaveChangesInterceptor SaveChangesFailure { get; } = new();
 
@@ -37,7 +54,7 @@ public class ImageStoreApiFactory : WebApplicationFactory<Program>
         builder.ConfigureAppConfiguration((_, configuration) => configuration.AddInMemoryCollection(new Dictionary<string, string?>
         {
             ["Database:Provider"] = "InMemory",
-            ["Database:InMemoryDatabaseName"] = $"imagestore-it-{Guid.NewGuid():N}",
+            ["Database:InMemoryDatabaseName"] = _sharedDatabaseName ?? $"imagestore-it-{Guid.NewGuid():N}",
             ["Storage:RootPath"] = StorageRoot,
             ["ImageUpload:MaxFileSizeBytes"] = MaxFileSizeBytes.ToString(System.Globalization.CultureInfo.InvariantCulture),
             ["ImageUpload:MaxFilesPerRequest"] = MaxFilesPerRequest.ToString(System.Globalization.CultureInfo.InvariantCulture),
