@@ -57,7 +57,7 @@ public sealed class ReactionService(
                 // A concurrent request inserted the user's first reaction at the same moment
                 // (unique (PostId, UserId) index): turn the insert into an update and retry once.
                 existing = await reactions.FindUserReactionAsync(postId, userId, cancellationToken)
-                    ?? throw;
+                    ?? throw new NotFoundException("User reaction");
                 existing.ChangeReaction(reaction, timeProvider.GetUtcNow().UtcDateTime);
                 await reactions.SaveChangesAsync(cancellationToken);
             }
