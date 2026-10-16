@@ -1,12 +1,5 @@
 import { DatePipe } from '@angular/common';
-import {
-  ChangeDetectionStrategy,
-  Component,
-  computed,
-  inject,
-  input,
-  signal,
-} from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { ImagePost, ReactionSummary } from '../../../core/models/api.models';
 import { PostApiService } from '../../../core/posts/post-api.service';
@@ -35,7 +28,9 @@ import { ReactionBar } from '../reaction-bar/reaction-bar';
           <p class="post-meta">
             <span class="post-username">&#64;{{ post.author.userName }}</span>
             <span aria-hidden="true">·</span>
-            <time [attr.datetime]="post.createdAtUtc">{{ post.createdAtUtc | date: 'mediumDate' }}</time>
+            <time [attr.datetime]="post.createdAtUtc">{{
+              post.createdAtUtc | date: 'mediumDate'
+            }}</time>
             @if (post.updatedAtUtc) {
               <span class="muted">(edited)</span>
             }
@@ -43,7 +38,11 @@ import { ReactionBar } from '../reaction-bar/reaction-bar';
         </div>
       </header>
 
-      <a class="post-image" [routerLink]="['/posts', post.id]" [attr.aria-label]="'Open post: ' + post.title">
+      <a
+        class="post-image"
+        [routerLink]="['/posts', post.id]"
+        [attr.aria-label]="'Open post: ' + post.title"
+      >
         @if (!broken()) {
           <img
             [src]="api.contentUrl(post.id)"
@@ -65,6 +64,7 @@ import { ReactionBar } from '../reaction-bar/reaction-bar';
           <p class="post-description">{{ post.description }}</p>
         }
         <div class="post-actions">
+          <a routerLink="/chat" [queryParams]="{ share: post.id }">Share in message</a>
           <app-reaction-bar
             [postId]="post.id"
             [totalCount]="post.reactionCount"

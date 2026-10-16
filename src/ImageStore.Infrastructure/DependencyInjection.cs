@@ -41,6 +41,7 @@ public static class DependencyInjection
 
         // Options are resolved lazily so that test hosts and environment overrides are honoured.
         services.AddDbContext<ImageStoreDbContext>(ConfigureDatabase);
+        services.AddScoped<ImageStore.Application.Chat.IChatService, ChatService>();
         services.AddScoped<IImageRepository, ImageRepository>();
         services.AddScoped<ISocialRepository, SocialRepository>();
         services.AddScoped<IPostRepository, PostRepository>();

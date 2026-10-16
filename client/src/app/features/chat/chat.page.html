@@ -1,0 +1,109 @@
+<section class="page" (window:focus)="markRead()" (document:visibilitychange)="markRead()">
+  <header>
+    <h1>Messages</h1>
+    <p role="status">{{ chat.status() }}</p>
+  </header>
+  @if (error()) {
+    <div role="alert" class="card">
+      {{ error() }} <button class="btn" (click)="refresh()">Refresh</button
+      ><button class="btn" (click)="discard()">Discard pending retry</button>
+    </div>
+  }
+  @if (share) {
+    <p>Choose a conversation to share this post, or open a person's profile and select Message.</p>
+  }
+  <div class="chat-layout">
+    <aside class="card" aria-label="Conversations">
+      @if (loading()) {
+        <p role="status">Loading…</p>
+      }
+      @for (c of conversations(); track c.id) {
+        <button class="conversation" [class.active]="selected()?.id === c.id" (click)="choose(c)">
+          <app-avatar [user]="other(c)" />
+          <span
+            ><strong>{{ other(c).displayName }}</strong
+            ><small>{{
+              c.latestMessage?.messageType === 'post' ? 'Shared a post' : c.latestMessage?.content
+            }}</small
+            ><small>{{ c.latestMessage?.createdAtUtc | date: 'short' }}</small></span
+          >
+          @if (c.unreadCount) {
+            <b [attr.aria-label]="c.unreadCount + ' unread messages'">{{ c.unreadCount }}</b>
+          }
+        </button>
+      } @empty {
+        @if (!loading()) {
+          <p>No conversations yet. <a routerLink="/users">Find someone to message</a>.</p>
+        }
+      }
+      <nav aria-label="Conversation pages">
+        <button class="btn" [disabled]="page <= 1" (click)="move(-1)">Previous</button
+        ><button class="btn" [disabled]="page >= totalPages" (click)="move(1)">Next</button>
+      </nav>
+    </aside>
+    <section class="card window" aria-label="Chat">
+      @if (selected(); as c) {
+        <h2>
+          <a [routerLink]="['/users', other(c).id]">{{ other(c).displayName }}</a>
+        </h2>
+        @if (older()) {
+          <button class="btn" (click)="loadOlder()">Load older messages</button>
+        }
+        <div class="history" role="log" aria-label="Message history">
+          @for (m of messages(); track m.id) {
+            <article class="message" [class.mine]="m.senderUserId === auth.user()?.id">
+              <p>{{ m.content }}</p>
+              @if (m.messageType === 'post') {
+                @if (m.sharedPostId) {
+                  <a [routerLink]="['/posts', m.sharedPostId]">View shared image post</a>
+                } @else {
+                  <p class="muted">Post deleted or no longer available</p>
+                }
+              }
+              <small
+                >{{ m.createdAtUtc | date: 'short' }}
+                @if (m.senderUserId === auth.user()?.id) {
+                  · {{ other(c).lastReadSequence >= m.sequence ? 'Read' : 'Sent' }}
+                }
+              </small>
+            </article>
+          } @empty {
+            <p>Start the conversation.</p>
+          }
+        </div>
+        <p role="status">
+          @if (chat.typing()?.id === c.id && (chat.typing()?.until ?? 0) > now()) {
+            {{ other(c).displayName }} is typing…
+          }
+        </p>
+        <form (ngSubmit)="send()">
+          @if (share) {
+            <p>
+              Image post attached <button type="button" (click)="share = undefined">Remove</button>
+            </p>
+          }
+          <label for="message">Message</label>
+          <textarea
+            id="message"
+            name="message"
+            [(ngModel)]="draft"
+            maxlength="4000"
+            rows="3"
+            (input)="chat.indicateTyping()"
+            (keydown)="key($event)"
+            aria-describedby="message-help"
+          ></textarea>
+          <small id="message-help"
+            >Enter to send · Shift+Enter for a new line. Failed sends can be retried with
+            Send.</small
+          >
+          <button class="btn btn-primary" [disabled]="sending() || (!draft.trim() && !share)">
+            {{ sending() ? 'Sending…' : 'Send' }}
+          </button>
+        </form>
+      } @else {
+        <p>Select a conversation to begin.</p>
+      }
+    </section>
+  </div>
+</section>

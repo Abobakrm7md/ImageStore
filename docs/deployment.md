@@ -189,3 +189,9 @@ only (`StorageMaintenance__Enabled=false` elsewhere).
 - [ ] Swagger disabled (default outside Development) and `Cors:AllowedOrigins` empty for same-origin hosting.
 - [ ] Reverse-proxy body-size limit aligned with the upload limits.
 - [ ] Optional: antivirus / content scanning of uploads (not included).
+
+## Chat / Docker
+
+The root `Dockerfile`, `compose.yaml`, and `deploy/nginx.conf` provide a single-instance deployment
+of this same API/SPA with external SQL Server. See [chat deployment](chat.md#migration-and-deployment)
+for TLS, persistent keys, migration commands, WebSocket proxying, and multi-instance requirements.

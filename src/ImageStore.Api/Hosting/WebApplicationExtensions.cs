@@ -83,6 +83,25 @@ internal static class WebApplicationExtensions
         app.UseAuthorization();
         app.UseRateLimiter();
 
+        // Cookie-authenticated WebSockets need explicit origin validation (CORS does not
+        // protect WebSockets). Chat is intentionally same-origin, including dev proxy.
+        app.Use(async (context, next) =>
+        {
+            if (context.Request.Path.StartsWithSegments("/api/chat"))
+            {
+                var origin = context.Request.Headers.Origin.ToString();
+                if (origin.Length > 0 && !string.Equals(origin, $"{context.Request.Scheme}://{context.Request.Host}", StringComparison.OrdinalIgnoreCase))
+                { context.Response.StatusCode = 403; return; }
+                if (HttpMethods.IsPost(context.Request.Method))
+                {
+                    try { await context.RequestServices.GetRequiredService<Microsoft.AspNetCore.Antiforgery.IAntiforgery>().ValidateRequestAsync(context); }
+                    catch (Microsoft.AspNetCore.Antiforgery.AntiforgeryValidationException)
+                    { context.Response.StatusCode = 400; return; }
+                }
+            }
+            await next(context);
+        });
+        app.MapHub<ImageStore.Api.Chat.ChatHub>("/api/chat", options => options.CloseOnAuthenticationExpiration = true);
         app.MapControllers();
         app.MapHealthChecks("/health").AllowAnonymous();
 

@@ -654,6 +654,55 @@ namespace ImageStore.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
+            modelBuilder.Entity("ImageStore.Domain.Chat.Conversation", b =>
+            {
+                b.Property<Guid>("Id").ValueGeneratedOnAdd().HasColumnType("uniqueidentifier");
+                b.Property<string>("PairKey").IsRequired().HasMaxLength(65).HasColumnType("nvarchar(65)");
+                b.Property<DateTime>("CreatedAtUtc").HasColumnType("datetime2");
+                b.Property<DateTime>("UpdatedAtUtc").HasColumnType("datetime2");
+                b.Property<DateTime?>("LastMessageAtUtc").HasColumnType("datetime2");
+                b.Property<long>("LastSequence").IsConcurrencyToken().HasColumnType("bigint");
+                b.HasKey("Id");
+                b.HasIndex("PairKey").IsUnique();
+                b.ToTable("Conversations");
+            });
+            modelBuilder.Entity("ImageStore.Domain.Chat.ConversationParticipant", b =>
+            {
+                b.Property<Guid>("ConversationId").HasColumnType("uniqueidentifier");
+                b.Property<Guid>("UserId").HasColumnType("uniqueidentifier");
+                b.Property<DateTime>("JoinedAtUtc").HasColumnType("datetime2");
+                b.Property<long>("LastReadSequence").IsConcurrencyToken().HasColumnType("bigint");
+                b.HasKey("ConversationId", "UserId");
+                b.HasIndex("UserId");
+                b.ToTable("ConversationParticipants");
+            });
+            modelBuilder.Entity("ImageStore.Domain.Chat.ChatMessage", b =>
+            {
+                b.Property<Guid>("Id").ValueGeneratedOnAdd().HasColumnType("uniqueidentifier");
+                b.Property<Guid>("ConversationId").HasColumnType("uniqueidentifier");
+                b.Property<Guid>("SenderUserId").HasColumnType("uniqueidentifier");
+                b.Property<long>("Sequence").HasColumnType("bigint");
+                b.Property<string>("Content").IsRequired().HasMaxLength(4000).HasColumnType("nvarchar(4000)");
+                b.Property<DateTime>("CreatedAtUtc").HasColumnType("datetime2");
+                b.Property<string>("MessageType").IsRequired().HasMaxLength(8).HasColumnType("nvarchar(8)");
+                b.Property<Guid?>("SharedPostId").HasColumnType("uniqueidentifier");
+                b.HasKey("Id");
+                b.HasIndex("ConversationId", "Sequence").IsUnique();
+                b.HasIndex("ConversationId", "SenderUserId");
+                b.HasIndex("SharedPostId");
+                b.ToTable("ChatMessages", t => t.HasCheckConstraint("CK_ChatMessages_Content", "LEN([Content]) <= 4000 AND ([MessageType] = 'post' OR ([MessageType] = 'text' AND LEN(LTRIM(RTRIM([Content]))) > 0))"));
+            });
+            modelBuilder.Entity("ImageStore.Domain.Chat.ConversationParticipant", b =>
+            {
+                b.HasOne("ImageStore.Domain.Chat.Conversation", null).WithMany("Participants").HasForeignKey("ConversationId").OnDelete(DeleteBehavior.Cascade).IsRequired();
+                b.HasOne("ImageStore.Infrastructure.Identity.ApplicationUser", null).WithMany().HasForeignKey("UserId").OnDelete(DeleteBehavior.NoAction).IsRequired();
+            });
+            modelBuilder.Entity("ImageStore.Domain.Chat.ChatMessage", b =>
+            {
+                b.HasOne("ImageStore.Domain.Chat.ConversationParticipant", null).WithMany().HasForeignKey("ConversationId", "SenderUserId").OnDelete(DeleteBehavior.NoAction).IsRequired();
+                b.HasOne("ImageStore.Domain.Posts.ImagePost", null).WithMany().HasForeignKey("SharedPostId").OnDelete(DeleteBehavior.SetNull);
+            });
+            modelBuilder.Entity("ImageStore.Domain.Chat.Conversation", b => b.Navigation("Participants"));
 #pragma warning restore 612, 618
         }
     }

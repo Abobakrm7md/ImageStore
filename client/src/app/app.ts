@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, DestroyRef, inject, signal } from '
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { filter } from 'rxjs';
+import { ChatService } from './core/chat/chat.service';
 import { AuthService } from './core/auth/auth.service';
 import { NotificationService } from './core/notifications/notification.service';
 import { ConfirmDialog } from './shared/components/confirm-dialog/confirm-dialog';
@@ -16,6 +17,7 @@ import { Icon } from './shared/components/icon/icon';
   styleUrl: './app.css',
 })
 export class App {
+  protected readonly chat = inject(ChatService);
   protected readonly auth = inject(AuthService);
   private readonly router = inject(Router);
   private readonly notifications = inject(NotificationService);

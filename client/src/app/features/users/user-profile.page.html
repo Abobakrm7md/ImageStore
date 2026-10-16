@@ -22,7 +22,9 @@
         @if (person.bio) {
           <p class="profile-bio">{{ person.bio }}</p>
         }
-        <p class="muted profile-since">Member since {{ person.createdAtUtc | date: 'MMMM yyyy' }}</p>
+        <p class="muted profile-since">
+          Member since {{ person.createdAtUtc | date: 'MMMM yyyy' }}
+        </p>
       </div>
       <div class="profile-actions">
         @if (person.isCurrentUser) {
@@ -33,6 +35,9 @@
             <app-icon name="plus" [size]="16" /> New post
           </a>
         } @else {
+          <a class="btn btn-secondary btn-sm" routerLink="/chat" [queryParams]="{ user: person.id }"
+            >Message</a
+          >
           <app-follow-button
             [userId]="person.id"
             [following]="isFollowing()"
@@ -62,12 +67,16 @@
       @if (!postsVisible()) {
         <app-empty-state
           heading="Posts are visible to followers"
-          [message]="'Follow @' + person.userName + ' to see their image posts in your feed and here.'"
+          [message]="
+            'Follow @' + person.userName + ' to see their image posts in your feed and here.'
+          "
           icon="compass"
         />
       } @else if (userPosts.error()) {
         <app-empty-state heading="Couldn't load posts" icon="alert" tone="error">
-          <button type="button" class="btn btn-primary" (click)="userPosts.reload()">Try again</button>
+          <button type="button" class="btn btn-primary" (click)="userPosts.reload()">
+            Try again
+          </button>
         </app-empty-state>
       } @else if (userPosts.hasValue()) {
         @let result = userPosts.value();

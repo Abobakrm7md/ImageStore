@@ -19,16 +19,10 @@
         <app-icon [name]="menuOpen() ? 'close' : 'menu'" />
       </button>
       <nav id="main-nav" class="main-nav" [class.open]="menuOpen()" aria-label="Main">
-        <a
-          routerLink="/feed"
-          routerLinkActive="active"
-          [routerLinkActiveOptions]="{ exact: true }"
+        <a routerLink="/feed" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }"
           >Feed</a
         >
-        <a
-          routerLink="/users"
-          routerLinkActive="active"
-          [routerLinkActiveOptions]="{ exact: true }"
+        <a routerLink="/users" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }"
           >People</a
         >
         <a
@@ -37,6 +31,7 @@
           [routerLinkActiveOptions]="{ exact: true }"
           >Gallery</a
         >
+        <a routerLink="/chat" routerLinkActive="active">Messages</a>
         <a routerLink="/images/upload" routerLinkActive="active">Upload</a>
         <a class="user-chip" [routerLink]="['/users', user.id]" [title]="user.email">
           <app-icon name="user" [size]="16" />

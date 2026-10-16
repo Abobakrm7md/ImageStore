@@ -40,6 +40,9 @@ internal static class ApiServiceCollectionExtensions
         services.AddOptions<CorsSettings>().Bind(configuration.GetSection(CorsSettings.SectionName));
         services.AddOptions<RateLimitingSettings>().Bind(configuration.GetSection(RateLimitingSettings.SectionName));
 
+        services.AddSignalR(options => { options.MaximumReceiveMessageSize = 24 * 1024; });
+        services.AddSingleton<ImageStore.Api.Chat.ChatLimits>();
+        services.AddScoped<ImageStore.Api.Chat.ChatEvents>();
         services.AddHttpContextAccessor();
         services.AddScoped<ICurrentUser, HttpContextCurrentUser>();
         services.AddScoped<AntiforgeryTokenIssuer>();
