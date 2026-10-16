@@ -5,6 +5,27 @@ import { ChangeDetectionStrategy, Component, computed, input } from '@angular/co
  * unlike emoji or symbol glyphs, which depend on the fonts installed on the device.
  */
 const ICONS = {
+  'chevron-down': ['M6 9l6 6 6-6'],
+  'chevron-left': ['M15 6l-6 6 6 6'],
+  'chevron-right': ['M9 6l6 6-6 6'],
+  settings: [
+    'M12 8a4 4 0 1 1 0 8 4 4 0 0 1 0-8z',
+    'M12 2v3m0 14v3M2 12h3m14 0h3M5 5l2 2m10 10 2 2M5 19l2-2M17 7l2-2',
+  ],
+  logout: ['M9 4H4v16h5', 'M10 12h11m-4-4 4 4-4 4'],
+  grid: ['M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h7v7h-7z'],
+  'thumb-up': ['M7 10v11H3V10h4z', 'M7 10l5-8h2v7h5a2 2 0 0 1 2 2l-2 8a2 2 0 0 1-2 2H7'],
+  'thumb-down': ['M7 14V3H3v11h4z', 'M7 14l5 8h2v-7h5a2 2 0 0 0 2-2l-2-8a2 2 0 0 0-2-2H7'],
+  smile: ['M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z', 'M8 14s1 3 4 3 4-3 4-3M8 9h.01M16 9h.01'],
+  surprised: [
+    'M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z',
+    'M8 9h.01M16 9h.01M12 13a2 2 0 1 1 0 4 2 2 0 0 1 0-4z',
+  ],
+  sad: ['M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z', 'M8 16s1-3 4-3 4 3 4 3M8 9h.01M16 9h.01'],
+  volume: ['M11 4 6 8H2v8h4l5 4V4z', 'M15 8a6 6 0 0 1 0 8M18 5a10 10 0 0 1 0 14'],
+  mention: ['M16 8v6a2 2 0 0 0 4 0v-2a8 8 0 1 0-3 6', 'M16 12a4 4 0 1 1-8 0 4 4 0 0 1 8 0z'],
+  reply: ['M9 5 3 11l6 6', 'M3 11h11a7 7 0 0 1 7 7'],
+  lock: ['M6 10h12v11H6z', 'M8 10V6a4 4 0 0 1 8 0v4'],
   bell: ['M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9', 'M10 21h4'],
   alert: [
     'M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z',

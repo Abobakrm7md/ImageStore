@@ -1,5 +1,5 @@
 .search-users-page {
-  max-width: 48rem;
+  max-width: var(--reading-width);
 }
 
 .page-head {
@@ -78,9 +78,9 @@
 }
 
 .user-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.55rem;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
   margin-bottom: 1rem;
   transition: opacity 0.2s ease;
 }
@@ -105,4 +105,13 @@
 
 .user-row-skeleton .skeleton-line {
   flex: 1;
+}
+
+.user-list > * {
+  min-width: 0;
+}
+@media (max-width: 700px) {
+  .user-list {
+    grid-template-columns: 1fr;
+  }
 }

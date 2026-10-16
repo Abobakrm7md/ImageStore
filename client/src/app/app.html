@@ -1,57 +1,85 @@
 <a class="skip-link" href="#main">Skip to content</a>
-
-<header class="app-header">
+<header class="app-header" (keydown.escape)="menuOpen.set(false)">
   <div class="header-inner">
-    <a class="brand" [routerLink]="auth.isAuthenticated() ? '/feed' : '/login'">
-      <app-icon class="brand-mark" name="logo" [size]="26" />
-      <span>ImageStore</span>
+    <a
+      class="brand"
+      [routerLink]="auth.isAuthenticated() ? '/feed' : '/login'"
+      aria-label="ImageStore home"
+    >
+      <span class="brand-symbol"><app-icon name="logo" [size]="25" /></span>
+      <span>Image<span class="brand-light">Store</span><span class="brand-dot">.</span></span>
     </a>
-
     @if (auth.user(); as user) {
-      <button
-        type="button"
-        class="menu-toggle"
-        [attr.aria-expanded]="menuOpen()"
-        aria-controls="main-nav"
-        aria-label="Toggle navigation"
-        (click)="menuOpen.set(!menuOpen())"
-      >
-        <app-icon [name]="menuOpen() ? 'close' : 'menu'" />
-      </button>
       <nav id="main-nav" class="main-nav" [class.open]="menuOpen()" aria-label="Main">
-        <a routerLink="/feed" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }"
-          >Feed</a
+        <a routerLink="/feed" routerLinkActive="active" ariaCurrentWhenActive="page"
+          ><app-icon name="compass" [size]="17" />Feed</a
         >
-        <a routerLink="/users" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }"
-          >People</a
+        <a routerLink="/users" routerLinkActive="active" ariaCurrentWhenActive="page"
+          ><app-icon name="users" [size]="17" />People</a
         >
         <a
           routerLink="/images"
           routerLinkActive="active"
           [routerLinkActiveOptions]="{ exact: true }"
-          >Gallery</a
+          ariaCurrentWhenActive="page"
+          ><app-icon name="image" [size]="17" />Gallery</a
+        >
+        <a routerLink="/chat" routerLinkActive="active" ariaCurrentWhenActive="page"
+          ><app-icon name="message" [size]="17" />Messages</a
+        >
+      </nav>
+      <div class="header-actions">
+        <a
+          class="btn btn-primary upload-link"
+          routerLink="/images/upload"
+          aria-label="Upload images"
+          ><app-icon name="plus" [size]="18" /><span>Upload</span></a
         >
         <app-notification-bell />
-        <a routerLink="/chat" routerLinkActive="active">Messages</a>
-        <a routerLink="/images/upload" routerLinkActive="active">Upload</a>
-        <a class="user-chip" [routerLink]="['/users', user.id]" [title]="user.email">
-          <app-icon name="user" [size]="16" />
-          <span class="user-email">{{ user.email }}</span>
-        </a>
-        <button type="button" class="btn btn-ghost btn-sm" (click)="logout()">Sign out</button>
-      </nav>
+        <details
+          #accountMenu
+          class="account-menu"
+          (keydown.escape)="accountMenu.open = false"
+          (document:click)="closeAccountMenu($event, accountMenu)"
+        >
+          <summary [attr.aria-label]="'Account menu for ' + user.email">
+            <span class="account-initial">{{ user.email.charAt(0).toUpperCase() }}</span
+            ><app-icon name="chevron-down" [size]="13" />
+          </summary>
+          <div class="account-dropdown">
+            <p class="account-email">{{ user.email }}</p>
+            <a [routerLink]="['/users', user.id]" (click)="accountMenu.open = false"
+              ><app-icon name="user" [size]="17" />My profile</a
+            >
+            <a routerLink="/account" (click)="accountMenu.open = false"
+              ><app-icon name="settings" [size]="17" />Account settings</a
+            >
+            <button type="button" (click)="accountMenu.open = false; logout()">
+              <app-icon name="logout" [size]="17" />Sign out
+            </button>
+          </div>
+        </details>
+        <button
+          type="button"
+          class="icon-button menu-toggle"
+          [attr.aria-expanded]="menuOpen()"
+          aria-controls="main-nav"
+          aria-label="Toggle navigation"
+          (click)="menuOpen.set(!menuOpen())"
+        >
+          <app-icon [name]="menuOpen() ? 'close' : 'menu'" [size]="20" />
+        </button>
+      </div>
     } @else {
-      <nav class="main-nav guest" aria-label="Account">
-        <a routerLink="/login" routerLinkActive="active">Sign in</a>
-        <a class="btn btn-primary btn-sm" routerLink="/register">Create account</a>
+      <nav class="guest-nav" aria-label="Account">
+        <a routerLink="/login" class="btn btn-ghost">Sign in</a
+        ><a routerLink="/register" class="btn btn-primary" aria-label="Join ImageStore"
+          >Join<span class="join-label">ImageStore</span></a
+        >
       </nav>
     }
   </div>
 </header>
-
-<main id="main" class="app-main">
-  <router-outlet />
-</main>
-
+<main id="main" class="app-main" tabindex="-1"><router-outlet /></main>
 <app-toast-container />
 <app-confirm-dialog />

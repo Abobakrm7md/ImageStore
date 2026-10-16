@@ -35,6 +35,7 @@ export function buildPageItems(page: number, totalPages: number, window = 1): Pa
         <button
           type="button"
           class="btn btn-ghost"
+          aria-label="Previous page"
           [disabled]="page() <= 1"
           (click)="pageChange.emit(page() - 1)"
         >
@@ -48,7 +49,7 @@ export function buildPageItems(page: number, totalPages: number, window = 1): Pa
               } @else {
                 <button
                   type="button"
-                  class="page"
+                  class="page-button"
                   [class.active]="item === page()"
                   [attr.aria-current]="item === page() ? 'page' : null"
                   [attr.aria-label]="'Page ' + item"
@@ -63,6 +64,7 @@ export function buildPageItems(page: number, totalPages: number, window = 1): Pa
         <button
           type="button"
           class="btn btn-ghost"
+          aria-label="Next page"
           [disabled]="page() >= totalPages()"
           (click)="pageChange.emit(page() + 1)"
         >

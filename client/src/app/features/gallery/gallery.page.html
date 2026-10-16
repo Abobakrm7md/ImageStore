@@ -1,6 +1,7 @@
 <section class="page">
   <header class="page-header">
     <div>
+      <span class="eyebrow">Your private collection</span>
       <h1>My images</h1>
       <p class="muted" aria-live="polite">
         @if (images.hasValue()) {
@@ -99,10 +100,11 @@
       }
     } @else {
       <ul class="image-grid" [class.dimmed]="images.isLoading()">
-        @for (image of result.items; track image.id) {
+        @for (image of result.items; track image.id; let index = $index) {
           <li>
             <app-image-card
               [image]="image"
+              (previewRequested)="viewingIndex.set(index)"
               (deleteRequested)="confirmDelete($event)"
               (tagSelected)="filterByTag($event)"
             />
@@ -129,3 +131,17 @@
     </ul>
   }
 </section>
+
+@if (viewing(); as viewed) {
+  <app-image-lightbox
+    [src]="api.contentUrl(viewed.id)"
+    [alt]="viewed.title"
+    [open]="true"
+    [position]="(viewingIndex() ?? 0) + 1 + ' / ' + images.value()?.items?.length"
+    [hasPrevious]="(viewingIndex() ?? 0) > 0"
+    [hasNext]="(viewingIndex() ?? 0) < (images.value()?.items?.length ?? 0) - 1"
+    (previous)="viewingIndex.set((viewingIndex() ?? 0) - 1)"
+    (next)="viewingIndex.set((viewingIndex() ?? 0) + 1)"
+    (closed)="viewingIndex.set(null)"
+  />
+}

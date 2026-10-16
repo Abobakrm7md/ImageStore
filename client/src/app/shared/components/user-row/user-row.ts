@@ -31,15 +31,22 @@ import { FollowButton } from '../follow-button/follow-button';
       display: flex;
       align-items: center;
       gap: 0.75rem;
-      padding: 0.7rem 1rem;
+      padding: 1.25rem;
+      min-height: 108px;
+      transition: border-color var(--transition-fast);
     }
 
+    .user-row:hover {
+      border-color: var(--color-border-strong);
+    }
     .user-row-text {
       flex: 1;
       min-width: 0;
     }
 
     .user-row-name {
+      display: block;
+      overflow-wrap: anywhere;
       font-weight: 600;
       color: var(--color-text);
       text-decoration: none;

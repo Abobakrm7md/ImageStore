@@ -7,6 +7,7 @@ import {
   output,
   signal,
 } from '@angular/core';
+import { Icon } from '../icon/icon';
 import { firstValueFrom } from 'rxjs';
 import { errorMessage } from '../../../core/http/api-error';
 import { NotificationService } from '../../../core/notifications/notification.service';
@@ -21,6 +22,7 @@ import { REACTIONS, reactionMeta } from '../../utils/reactions';
  */
 @Component({
   selector: 'app-reaction-bar',
+  imports: [Icon],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="reaction-bar">
@@ -33,11 +35,15 @@ import { REACTIONS, reactionMeta } from '../../utils/reactions';
         [attr.aria-pressed]="myReaction() !== null"
         (click)="toggleMain()"
       >
-        <span class="emoji" aria-hidden="true">{{ mainEmoji() }}</span>
+        <app-icon [name]="mainIcon()" [size]="17" />
         <span class="count">{{ totalCount() }}</span>
       </button>
 
-      <div class="reaction-picker">
+      <div
+        class="reaction-picker"
+        (keydown.escape)="pickerOpen.set(false)"
+        (focusout)="onFocusOut($event)"
+      >
         <button
           type="button"
           class="picker-toggle"
@@ -46,7 +52,7 @@ import { REACTIONS, reactionMeta } from '../../utils/reactions';
           aria-label="Choose a reaction"
           (click)="pickerOpen.set(!pickerOpen())"
         >
-          <span aria-hidden="true">＋</span>
+          <app-icon name="chevron-down" [size]="13" />
         </button>
         @if (pickerOpen()) {
           <div class="picker" role="group" aria-label="Reactions">
@@ -60,7 +66,7 @@ import { REACTIONS, reactionMeta } from '../../utils/reactions';
                 [attr.aria-label]="reaction.label"
                 (click)="choose(reaction.type)"
               >
-                {{ reaction.emoji }}
+                <app-icon [name]="reaction.icon" [size]="20" /><span>{{ reaction.label }}</span>
               </button>
             }
           </div>
@@ -71,7 +77,7 @@ import { REACTIONS, reactionMeta } from '../../utils/reactions';
         <span class="reaction-breakdown" aria-hidden="true">
           @for (entry of countsByType(); track entry.reaction) {
             <span class="breakdown-item" [title]="entry.label + ': ' + entry.count">
-              {{ entry.emoji }} {{ entry.count }}
+              <app-icon [name]="entry.icon" [size]="13" /> {{ entry.count }}
             </span>
           }
         </span>
@@ -79,89 +85,97 @@ import { REACTIONS, reactionMeta } from '../../utils/reactions';
     </div>
   `,
   styles: `
+    :host {
+      display: inline-block;
+      min-width: 0;
+    }
     .reaction-bar {
       display: flex;
       align-items: center;
-      gap: 0.4rem;
+      gap: 0.2rem;
       flex-wrap: wrap;
     }
-
     .reaction-main,
     .picker-toggle {
       display: inline-flex;
       align-items: center;
-      gap: 0.35rem;
-      border: 1px solid var(--color-border);
-      background: var(--color-surface);
-      color: var(--color-text);
-      border-radius: 999px;
-      padding: 0.25rem 0.65rem;
+      justify-content: center;
+      gap: 0.4rem;
+      min-height: 40px;
+      border: 0;
+      background: transparent;
+      color: var(--color-text-muted);
+      border-radius: var(--radius-sm);
+      padding: 0.4rem 0.55rem;
       font: inherit;
-      font-size: 0.9rem;
+      font-size: 0.8rem;
       cursor: pointer;
     }
-
-    .reaction-main:hover:not(:disabled),
-    .picker-toggle:hover:not(:disabled) {
-      border-color: var(--color-border-strong);
+    .picker-toggle {
+      min-width: 32px;
     }
-
+    .reaction-main:hover,
+    .picker-toggle:hover {
+      background: var(--color-surface-muted);
+      color: var(--color-text);
+    }
     .reaction-main.active {
-      background: var(--color-primary-soft);
-      border-color: var(--color-primary);
       color: var(--color-primary);
-      font-weight: 600;
+      background: var(--color-primary-soft);
     }
-
-    .reaction-main:disabled,
-    .picker-toggle:disabled,
-    .picker-item:disabled {
-      opacity: 0.6;
-      cursor: default;
+    button:disabled {
+      opacity: 0.5;
+      cursor: wait;
     }
-
     .reaction-picker {
       position: relative;
     }
-
     .picker {
       position: absolute;
-      bottom: calc(100% + 0.35rem);
-      left: 0;
-      display: flex;
-      gap: 0.15rem;
-      padding: 0.3rem;
-      background: var(--color-surface);
-      border: 1px solid var(--color-border);
-      border-radius: 999px;
-      box-shadow: var(--shadow-md);
-      z-index: 5;
+      z-index: 10;
+      bottom: calc(100% + 0.5rem);
+      left: -3rem;
+      width: 210px;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.25rem;
+      padding: 0.5rem;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--color-border-strong);
+      background: var(--color-surface-raised);
+      box-shadow: var(--shadow-lg);
     }
-
     .picker-item {
-      border: none;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.3rem;
+      min-height: 58px;
+      border: 0;
+      padding: 0.5rem 0.2rem;
       background: transparent;
-      font-size: 1.25rem;
-      line-height: 1;
-      padding: 0.3rem;
-      border-radius: 50%;
+      color: var(--color-text);
+      border-radius: var(--radius-sm);
       cursor: pointer;
+      font-size: 0.68rem;
     }
-
-    .picker-item:hover:not(:disabled) {
-      background: var(--color-surface-muted);
-      transform: scale(1.15);
-    }
-
+    .picker-item:hover,
     .picker-item.selected {
-      outline: 2px solid var(--color-primary);
+      color: var(--color-primary);
+      background: var(--color-primary-soft);
     }
-
     .reaction-breakdown {
-      display: inline-flex;
-      gap: 0.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      flex-wrap: wrap;
       color: var(--color-text-muted);
-      font-size: 0.85rem;
+      font-size: 0.7rem;
+    }
+    .breakdown-item {
+      display: flex;
+      align-items: center;
+      gap: 0.2rem;
     }
   `,
 })
@@ -188,15 +202,18 @@ export class ReactionBar {
       .map((entry) => ({ ...entry, ...reactionMeta(entry.reaction) })),
   );
 
-  protected readonly mainEmoji = computed(
-    () => reactionMeta(this.myReaction() ?? 'like').emoji,
-  );
+  protected readonly mainIcon = computed(() => reactionMeta(this.myReaction() ?? 'like').icon);
 
   protected readonly mainLabel = computed(() =>
     this.myReaction()
       ? `Remove your ${reactionMeta(this.myReaction()!).label.toLowerCase()}`
       : 'Like this post',
   );
+
+  protected onFocusOut(event: FocusEvent): void {
+    if (!(event.currentTarget as HTMLElement).contains(event.relatedTarget as Node | null))
+      this.pickerOpen.set(false);
+  }
 
   protected async toggleMain(): Promise<void> {
     const current = this.myReaction();
@@ -216,7 +233,9 @@ export class ReactionBar {
       this.summaryChanged.emit({
         totalCount: Math.max(0, this.totalCount() - 1),
         counts: this.counts().map((entry) =>
-          entry.reaction === current ? { ...entry, count: Math.max(0, entry.count - 1) } : { ...entry },
+          entry.reaction === current
+            ? { ...entry, count: Math.max(0, entry.count - 1) }
+            : { ...entry },
         ),
         myReaction: null,
       });

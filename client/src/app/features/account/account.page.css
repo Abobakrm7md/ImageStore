@@ -1,5 +1,5 @@
 .account-page {
-  max-width: 40rem;
+  max-width: var(--form-width);
   display: flex;
   flex-direction: column;
   gap: 1.1rem;
@@ -16,7 +16,7 @@
 
 .account-picture,
 .account-form {
-  padding: 1.2rem 1.3rem;
+  padding: clamp(1.25rem, 3vw, 2rem);
 }
 
 .picture-row {
@@ -79,4 +79,11 @@
   flex: 1;
   min-width: 5rem;
   margin-right: auto;
+}
+
+@media (max-width: 430px) {
+  .picture-row {
+    align-items: start;
+    flex-direction: column;
+  }
 }

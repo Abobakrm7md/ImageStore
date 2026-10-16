@@ -10,10 +10,11 @@ import { Icon } from '../icon/icon';
     routerLink="/notifications"
     routerLinkActive="active"
     class="bell"
+    ariaCurrentWhenActive="page"
     [attr.aria-label]="'Notifications, ' + inbox.unread() + ' unread'"
     [title]="inbox.error() || 'Notifications'"
   >
-    <app-icon name="bell" [size]="20" /><span>Notifications</span>
+    <app-icon name="bell" [size]="20" /><span class="visually-hidden">Notifications</span>
     @if (inbox.unread()) {
       <b aria-live="polite">{{ inbox.unread() > 99 ? '99+' : inbox.unread() }}</b>
     }
@@ -22,18 +23,42 @@ import { Icon } from '../icon/icon';
     }
   </a>`,
   styles: `
+    :host {
+      display: inline-flex;
+    }
     .bell {
-      display: flex;
-      align-items: center;
-      gap: 0.4rem;
       position: relative;
+      display: grid;
+      place-items: center;
+      width: 44px;
+      height: 44px;
+      border-radius: var(--radius-sm);
+      color: var(--color-text-muted);
+      text-decoration: none;
+    }
+    .bell:hover,
+    .bell.active {
+      color: var(--color-primary);
+      background: var(--color-primary-soft);
     }
     b {
-      border-radius: 12px;
-      padding: 0.1rem 0.4rem;
-      background: var(--color-primary, #665bd4);
-      color: white;
-      font-size: 0.75rem;
+      position: absolute;
+      top: 0;
+      right: 0;
+      min-width: 17px;
+      padding: 1px 4px;
+      border-radius: 6px;
+      border: 2px solid #141519;
+      font-size: 0.62rem;
+      line-height: 1.4;
+      font-weight: 650;
+      background: var(--color-primary);
+      color: #171321;
+    }
+    @media (max-width: 600px) {
+      .bell {
+        width: 38px;
+      }
     }
   `,
 })

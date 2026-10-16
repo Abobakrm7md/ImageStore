@@ -5,7 +5,8 @@
   "description": "Browser smoke test of the full ImageStore stack (SPA + API).",
   "type": "module",
   "scripts": {
-    "test": "node smoke.mjs"
+    "test": "node smoke.mjs",
+    "test:ui": "node ui-layout.mjs"
   },
   "devDependencies": {
     "puppeteer": "^25.14.0"

@@ -30,7 +30,20 @@
           (click)="lightboxOpen.set(true)"
           aria-label="View full size"
         >
-          <img [src]="contentUrl()" [alt]="img.title" decoding="async" />
+          @if (!previewBroken()) {
+            <img
+              [src]="contentUrl()"
+              [alt]="img.title"
+              [attr.width]="img.width || 1200"
+              [attr.height]="img.height || 900"
+              decoding="async"
+              (error)="previewBroken.set(true)"
+            />
+          } @else {
+            <span class="preview-unavailable"
+              ><app-icon name="image" [size]="40" />Image unavailable · Open viewer to retry</span
+            >
+          }
           <span class="zoom-hint" aria-hidden="true"
             ><app-icon name="expand" [size]="14" /> View full size</span
           >

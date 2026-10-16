@@ -23,6 +23,7 @@ export class NotificationsPage {
   readonly loading = signal(false);
   readonly busy = signal(false);
   readonly error = signal('');
+  readonly feedback = signal('');
   readonly now = signal(Date.now());
   readonly relativeTime = relativeTime;
   page = 1;
@@ -82,6 +83,10 @@ export class NotificationsPage {
   }
   icon(n: InboxNotification): IconName {
     switch (n.type) {
+      case 'commentMention':
+        return 'mention';
+      case 'commentReply':
+        return 'reply';
       case 'newFollower':
         return 'user';
       case 'postReaction':
@@ -105,6 +110,15 @@ export class NotificationsPage {
       if (action === 'remove' && n) await this.inbox.remove(n.id);
       if (action === 'readAll') await this.inbox.readAll();
       if (action === 'clearRead') await this.inbox.clearRead();
+      this.feedback.set(
+        action === 'open'
+          ? ''
+          : action === 'clearRead'
+            ? 'Read notifications cleared.'
+            : action === 'remove'
+              ? 'Notification deleted.'
+              : 'Marked as read.',
+      );
       await this.load();
     } catch {
       this.error.set('The action could not be completed. Refresh and try again.');
@@ -118,6 +132,7 @@ export class NotificationsPage {
       await this.inbox.savePreferences(this.settings);
       this.settings = { ...this.inbox.preferences() };
       this.editingSettings = false;
+      this.feedback.set('Preferences saved.');
       this.error.set('');
     } catch {
       this.error.set('Could not save preferences. Try again.');

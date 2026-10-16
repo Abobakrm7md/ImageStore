@@ -123,4 +123,18 @@ describe('Chat recovery and sending', () => {
     expect(page.messages().length).toBe(65);
     expect(page.older()).toBe(false);
   });
+  it('does not send an empty message from the keyboard', async () => {
+    page.draft = '   ';
+    await page.send();
+    expect(attempts).toHaveLength(0);
+  });
+  it('returns to the mobile inbox and clears the active history', async () => {
+    stored = [message(1)];
+    await page.refresh();
+    page.hasNewMessages.set(true);
+    page.closeConversation();
+    expect(page.selected()).toBeNull();
+    expect(page.messages()).toEqual([]);
+    expect(page.hasNewMessages()).toBe(false);
+  });
 });

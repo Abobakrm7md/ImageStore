@@ -1,15 +1,25 @@
-import { Component, DestroyRef, effect, inject, signal } from '@angular/core';
+import {
+  Component,
+  DestroyRef,
+  ElementRef,
+  afterEveryRender,
+  effect,
+  inject,
+  signal,
+  viewChild,
+} from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ChatService, Conversation, Message, SendRequest } from '../../core/chat/chat.service';
 import { AuthService } from '../../core/auth/auth.service';
+import { Icon } from '../../shared/components/icon/icon';
 import { Avatar } from '../../shared/components/avatar/avatar';
 
 @Component({
   selector: 'app-chat-page',
-  imports: [DatePipe, FormsModule, RouterLink, Avatar],
+  imports: [DatePipe, FormsModule, RouterLink, Avatar, Icon],
   templateUrl: './chat.page.html',
   styleUrl: './chat.page.css',
 })
@@ -25,6 +35,13 @@ export class ChatPage {
   readonly sending = signal(false);
   readonly older = signal(false);
   readonly now = signal(Date.now());
+  readonly loadingOlder = signal(false);
+  readonly hasNewMessages = signal(false);
+  private readonly history = viewChild<ElementRef<HTMLElement>>('history');
+  private readonly chatWindow = viewChild<ElementRef<HTMLElement>>('chatWindow');
+  private scrollPlan: 'bottom' | { height: number; top: number } | null = null;
+  private focusConversation = false;
+  private reading = false;
   page = 1;
   totalPages = 1;
   draft = '';
@@ -34,6 +51,20 @@ export class ChatPage {
   private again = false;
   private destroyed = false;
   constructor() {
+    afterEveryRender(() => {
+      const element = this.history()?.nativeElement;
+      if (element && this.scrollPlan) {
+        element.scrollTop =
+          this.scrollPlan === 'bottom'
+            ? element.scrollHeight
+            : element.scrollHeight - this.scrollPlan.height + this.scrollPlan.top;
+        this.scrollPlan = null;
+      }
+      if (this.focusConversation && this.chatWindow()) {
+        this.chatWindow()!.nativeElement.focus({ preventScroll: true });
+        this.focusConversation = false;
+      }
+    });
     const timer = setInterval(() => this.now.set(Date.now()), 1000);
     inject(DestroyRef).onDestroy(() => {
       clearInterval(timer);
@@ -113,50 +144,99 @@ export class ChatPage {
   async choose(c: Conversation) {
     this.selected.set(c);
     this.messages.set([]);
+    this.hasNewMessages.set(false);
+    this.focusConversation = true;
     this.older.set(true);
     this.error.set('');
     await this.chat.select(c.id);
     await this.refresh();
   }
-  private merge(items: Message[]) {
+  private merge(items: Message[], followLatest = true) {
+    const viewport = this.history()?.nativeElement;
+    const atBottom =
+      !viewport || viewport.scrollHeight - viewport.scrollTop - viewport.clientHeight < 80;
+    const initial = this.messages().length === 0;
+    const oldLast = this.messages().at(-1)?.sequence ?? 0;
+    if (followLatest && (initial || atBottom)) this.scrollPlan = 'bottom';
+    else if (followLatest && items.some((m) => m.sequence > oldLast)) this.hasNewMessages.set(true);
     const map = new Map(this.messages().map((m) => [m.id, m]));
     items.forEach((m) => map.set(m.id, m));
     this.messages.set([...map.values()].sort((a, b) => a.sequence - b.sequence));
   }
   async loadOlder() {
     const id = this.selected()?.id;
-    if (!id) return;
+    if (!id || this.loadingOlder()) return;
+    this.loadingOlder.set(true);
     try {
       const batch = await this.chat.history(id, this.messages()[0]?.sequence);
       if (this.selected()?.id !== id) return;
-      this.merge(batch);
+      const viewport = this.history()?.nativeElement;
+      const offset = viewport ? { height: viewport.scrollHeight, top: viewport.scrollTop } : null;
+      this.merge(batch, false);
+      this.scrollPlan = offset;
       this.older.set(batch.length === 50);
     } catch {
       this.error.set('Could not load older messages. Try again.');
+    } finally {
+      this.loadingOlder.set(false);
     }
   }
   async markRead() {
+    if (this.reading) return;
+    const viewport = this.history()?.nativeElement;
+    if (
+      viewport &&
+      this.scrollPlan !== 'bottom' &&
+      viewport.scrollHeight - viewport.scrollTop - viewport.clientHeight > 80
+    )
+      return;
     const c = this.selected();
     const latest = this.messages().at(-1);
     if (!c || !latest || document.visibilityState !== 'visible' || !document.hasFocus()) return;
     const me = c.participants.find((p) => p.id === this.auth.user()?.id)!;
     if (me.lastReadSequence >= latest.sequence) return;
-    await this.chat.read(c.id, latest.sequence);
-    if (this.selected()?.id === c.id)
-      this.selected.update((value) =>
-        value
-          ? {
-              ...value,
-              participants: value.participants.map((p) =>
-                p.id === me.id ? { ...p, lastReadSequence: latest.sequence } : p,
-              ),
-            }
-          : value,
-      );
+    this.reading = true;
+    try {
+      await this.chat.read(c.id, latest.sequence);
+      if (this.selected()?.id === c.id)
+        this.selected.update((value) =>
+          value
+            ? {
+                ...value,
+                participants: value.participants.map((p) =>
+                  p.id === me.id ? { ...p, lastReadSequence: latest.sequence } : p,
+                ),
+              }
+            : value,
+        );
+    } catch {
+      /* Retry read synchronization on the next refresh/focus without an unhandled rejection. */
+    } finally {
+      this.reading = false;
+    }
   }
+  closeConversation() {
+    this.selected.set(null);
+    this.messages.set([]);
+    this.hasNewMessages.set(false);
+    void this.chat.select();
+  }
+  showLatest() {
+    this.scrollPlan = 'bottom';
+    this.hasNewMessages.set(false);
+    void this.markRead();
+  }
+  onHistoryScroll() {
+    const el = this.history()?.nativeElement;
+    if (el && el.scrollHeight - el.scrollTop - el.clientHeight < 80) {
+      this.hasNewMessages.set(false);
+      void this.markRead();
+    }
+  }
+
   async send() {
     const c = this.selected();
-    if (!c || this.sending()) return;
+    if (!c || this.sending() || (!this.pending && !this.draft.trim() && !this.share)) return;
     if (this.pending && this.pending.conversationId !== c.id) {
       this.error.set(
         'Return to the previous conversation to retry the pending message, or discard it.',
@@ -172,7 +252,11 @@ export class ChatPage {
     this.error.set('');
     try {
       const message = await this.chat.send(c.id, this.pending.request);
-      if (this.selected()?.id === c.id) this.merge([message]);
+      if (this.selected()?.id === c.id) {
+        this.merge([message]);
+        this.scrollPlan = 'bottom';
+        this.hasNewMessages.set(false);
+      }
       this.pending = undefined;
       this.draft = '';
       this.share = undefined;

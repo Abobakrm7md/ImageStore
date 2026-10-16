@@ -43,6 +43,10 @@ export class App {
       .subscribe(() => this.menuOpen.set(false));
   }
 
+  protected closeAccountMenu(event: Event, menu: HTMLDetailsElement): void {
+    if (event.target instanceof Node && !menu.contains(event.target)) menu.open = false;
+  }
+
   protected logout(): void {
     this.auth
       .logout()

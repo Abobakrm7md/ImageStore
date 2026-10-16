@@ -1,6 +1,10 @@
 <section class="page search-users-page">
   <header class="page-head">
-    <h1>People</h1>
+    <div>
+      <span class="eyebrow">Find your kind of inspiration</span>
+      <h1>People</h1>
+      <p>New perspectives start with a connection.</p>
+    </div>
   </header>
 
   <form class="search-bar card" (ngSubmit)="submitSearch()">
@@ -20,7 +24,12 @@
         <app-field-error [control]="searchControl" [label]="'Search'" />
       }
       @if (term()) {
-        <button type="button" class="search-clear" (click)="clearSearch()" aria-label="Clear search">
+        <button
+          type="button"
+          class="search-clear"
+          (click)="clearSearch()"
+          aria-label="Clear search"
+        >
           <app-icon name="close" [size]="16" />
         </button>
       }
@@ -59,7 +68,9 @@
     } @else {
       <p class="result-count muted" role="status">
         {{ result.totalCount }} {{ result.totalCount === 1 ? 'person' : 'people' }}
-        @if (term()) { matching “{{ term() }}” }
+        @if (term()) {
+          matching “{{ term() }}”
+        }
       </p>
       <div class="user-list" [class.dimmed]="results.isLoading()">
         @for (user of result.items; track user.id) {

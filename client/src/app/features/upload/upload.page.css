@@ -3,11 +3,11 @@
   flex-direction: column;
   align-items: center;
   gap: 0.5rem;
-  min-height: 15rem;
-  padding: 2rem 1rem;
+  min-height: 20rem;
+  padding: 2.5rem 1rem;
   justify-content: center;
   text-align: center;
-  border: 2px dashed var(--color-border-strong);
+  border: 1px dashed var(--color-border-strong);
   border-radius: var(--radius-lg);
   background: var(--color-surface);
   transition:
@@ -187,5 +187,49 @@ progress {
   .footer-actions,
   .footer-actions .btn {
     width: 100%;
+  }
+}
+
+.upload-page {
+  max-width: var(--reading-width);
+}
+.dropzone-icon {
+  display: grid;
+  place-items: center;
+  width: 76px;
+  height: 76px;
+  border: 1px solid #514369;
+  border-radius: var(--radius-lg);
+  background: var(--color-primary-soft);
+  margin-bottom: 0.75rem;
+}
+.dropzone-title {
+  font-size: 1.2rem;
+  letter-spacing: -0.02em;
+}
+.dropzone:focus-within {
+  border-color: var(--color-primary);
+}
+.upload-list {
+  gap: 1rem;
+}
+.upload-item {
+  padding: 1rem;
+}
+.upload-thumb {
+  border: 1px solid var(--color-border);
+}
+@media (max-width: 600px) {
+  .dropzone {
+    min-height: 18rem;
+  }
+  .upload-footer {
+    position: static;
+  }
+  .upload-item {
+    padding: 0.75rem;
+  }
+  .footer-actions .btn {
+    min-height: 44px;
   }
 }
