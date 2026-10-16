@@ -43,6 +43,7 @@ internal static class ApiServiceCollectionExtensions
         services.AddSignalR(options => { options.MaximumReceiveMessageSize = 24 * 1024; });
         services.AddSingleton<ImageStore.Api.Chat.ChatLimits>();
         services.AddScoped<ImageStore.Api.Chat.ChatEvents>();
+        services.AddSingleton<ImageStore.Application.Notifications.INotificationDelivery, ImageStore.Api.Notifications.SignalRNotificationDelivery>();
         services.AddHttpContextAccessor();
         services.AddScoped<ICurrentUser, HttpContextCurrentUser>();
         services.AddScoped<AntiforgeryTokenIssuer>();
@@ -161,7 +162,7 @@ internal static class ApiServiceCollectionExtensions
                 options.AddDefaultPolicy(policy => policy
                     .WithOrigins(origins)
                     .AllowCredentials()
-                    .WithMethods(HttpMethods.Get, HttpMethods.Post, HttpMethods.Put, HttpMethods.Delete)
+                    .WithMethods(HttpMethods.Get, HttpMethods.Post, HttpMethods.Put, HttpMethods.Patch, HttpMethods.Delete)
                     .WithHeaders("Content-Type", AntiforgeryDefaults.HeaderName)
                     .WithExposedHeaders("Content-Disposition", "Location"));
             });
@@ -191,6 +192,10 @@ internal static class ApiServiceCollectionExtensions
                     },
                 });
             };
+
+            options.AddPolicy("SocialActivity", context => RateLimitPartition.GetFixedWindowLimiter(
+                context.User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "anonymous",
+                _ => new FixedWindowRateLimiterOptions { PermitLimit = 120, Window = TimeSpan.FromMinutes(1), QueueLimit = 0 }));
 
             // Slows down credential stuffing and account enumeration, partitioned per client IP.
             // Behind a reverse proxy, enable forwarded headers so the real client IP is used.

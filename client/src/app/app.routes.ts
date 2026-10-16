@@ -68,6 +68,12 @@ export const routes: Routes = [
     ],
   },
   {
+    path: 'notifications',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/notifications/notifications.page').then((m) => m.NotificationsPage),
+  },
+  {
     path: 'chat',
     canActivate: [authGuard],
     loadComponent: () => import('./features/chat/chat.page').then((m) => m.ChatPage),

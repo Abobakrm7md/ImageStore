@@ -31,6 +31,7 @@
           [routerLinkActiveOptions]="{ exact: true }"
           >Gallery</a
         >
+        <app-notification-bell />
         <a routerLink="/chat" routerLinkActive="active">Messages</a>
         <a routerLink="/images/upload" routerLinkActive="active">Upload</a>
         <a class="user-chip" [routerLink]="['/users', user.id]" [title]="user.email">

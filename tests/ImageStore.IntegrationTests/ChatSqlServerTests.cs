@@ -1,6 +1,7 @@
 using System.Net.Http.Json;
 using ImageStore.Application.Chat;
 using ImageStore.Domain.Chat;
+using ImageStore.Domain.Notifications;
 using ImageStore.Infrastructure.Persistence;
 using ImageStore.IntegrationTests.TestSupport;
 using Microsoft.AspNetCore.Hosting;
@@ -47,6 +48,7 @@ public sealed class ChatSqlServerTests
             var responses = await Task.WhenAll(Enumerable.Range(0, 6).Select(_ => alice.Http.PostAsJsonAsync($"/api/conversations/{id}/messages", request)));
             Assert.All(responses, response => response.EnsureSuccessStatusCode());
             Assert.Equal(1, await factory.WithDbContextAsync(db => db.Set<ChatMessage>().CountAsync(m => m.ConversationId == id)));
+            Assert.Equal(1, await factory.WithDbContextAsync(db => db.Set<Notification>().CountAsync(n => n.ConversationId == id && n.RecipientUserId == bob.User!.Id)));
             var sends = await Task.WhenAll(Enumerable.Range(0, 5).Select(i => alice.Http.PostAsJsonAsync($"/api/conversations/{id}/messages", new SendMessageRequest(Guid.NewGuid(), $"parallel {i}"))));
             Assert.All(sends, response => response.EnsureSuccessStatusCode());
             var history = await bob.Http.GetFromJsonAsync<MessageDto[]>($"/api/conversations/{id}/messages");
@@ -55,6 +57,7 @@ public sealed class ChatSqlServerTests
             Assert.All(reads, response => response.EnsureSuccessStatusCode());
             var summary = await alice.Http.GetFromJsonAsync<ConversationDto>($"/api/conversations/{id}");
             Assert.Equal(6, summary!.Participants.Single(p => p.Id == bob.User!.Id).LastReadSequence);
+            Assert.Equal(0, await factory.WithDbContextAsync(db => db.Set<Notification>().CountAsync(n => n.ConversationId == id && n.ReadAtUtc == null)));
             await Assert.ThrowsAsync<DbUpdateException>(() => factory.WithDbContextAsync(async db =>
             {
                 db.Add(new ConversationParticipant { ConversationId = id, UserId = alice.User!.Id, JoinedAtUtc = DateTime.UtcNow });

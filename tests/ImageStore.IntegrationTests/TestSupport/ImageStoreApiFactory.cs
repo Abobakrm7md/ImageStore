@@ -60,6 +60,7 @@ public class ImageStoreApiFactory : WebApplicationFactory<Program>
             ["ImageUpload:MaxFilesPerRequest"] = MaxFilesPerRequest.ToString(System.Globalization.CultureInfo.InvariantCulture),
             ["RateLimiting:Authentication:PermitLimit"] = "100000",
             ["StorageMaintenance:Enabled"] = "false",
+            ["Notifications:DispatchEnabled"] = "false",
             ["Swagger:Enabled"] = "true",
         }));
 
@@ -100,12 +101,16 @@ public class ImageStoreApiFactory : WebApplicationFactory<Program>
 public sealed class FailingSaveChangesInterceptor : SaveChangesInterceptor
 {
     public bool FailImageInserts { get; set; }
+    public bool FailNotificationInserts { get; set; }
 
     public override ValueTask<InterceptionResult<int>> SavingChangesAsync(
         DbContextEventData eventData,
         InterceptionResult<int> result,
         CancellationToken cancellationToken = default)
     {
+        if (FailNotificationInserts && eventData.Context!.ChangeTracker.Entries<ImageStore.Domain.Notifications.Notification>().Any(entry => entry.State == EntityState.Added))
+            throw new DbUpdateException("Simulated notification write failure.");
+
         if (FailImageInserts && eventData.Context!.ChangeTracker.Entries<Image>().Any(entry => entry.State == EntityState.Added))
         {
             throw new DbUpdateException("Simulated database failure.");

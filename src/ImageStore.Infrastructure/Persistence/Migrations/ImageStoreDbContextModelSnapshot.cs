@@ -131,6 +131,8 @@ namespace ImageStore.Infrastructure.Persistence.Migrations
                     b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("datetime2");
 
+                    b.Property<Guid?>("ParentCommentId").HasColumnType("uniqueidentifier");
+
                     b.Property<Guid>("PostId")
                         .HasColumnType("uniqueidentifier");
 
@@ -703,6 +705,58 @@ namespace ImageStore.Infrastructure.Persistence.Migrations
                 b.HasOne("ImageStore.Domain.Posts.ImagePost", null).WithMany().HasForeignKey("SharedPostId").OnDelete(DeleteBehavior.SetNull);
             });
             modelBuilder.Entity("ImageStore.Domain.Chat.Conversation", b => b.Navigation("Participants"));
+            modelBuilder.Entity("ImageStore.Domain.Notifications.Notification", b =>
+            {
+                b.Property<Guid>("Id").ValueGeneratedNever().HasColumnType("uniqueidentifier");
+                b.Property<Guid>("RecipientUserId").HasColumnType("uniqueidentifier");
+                b.Property<Guid?>("ActorUserId").HasColumnType("uniqueidentifier");
+                b.Property<int>("Type").HasColumnType("int");
+                b.Property<string>("EventKey").IsRequired().HasMaxLength(160).HasColumnType("nvarchar(160)");
+                b.Property<Guid?>("PostId").HasColumnType("uniqueidentifier");
+                b.Property<Guid?>("CommentId").HasColumnType("uniqueidentifier");
+                b.Property<Guid?>("ConversationId").HasColumnType("uniqueidentifier");
+                b.Property<Guid?>("MessageId").HasColumnType("uniqueidentifier");
+                b.Property<string>("Announcement").HasMaxLength(240).HasColumnType("nvarchar(240)");
+                b.Property<bool>("Critical").HasColumnType("bit");
+                b.Property<DateTime>("CreatedAtUtc").HasColumnType("datetime2");
+                b.Property<DateTime?>("ReadAtUtc").HasColumnType("datetime2");
+                b.Property<DateTime?>("DismissedAtUtc").HasColumnType("datetime2");
+                b.Property<DateTime?>("DispatchedAtUtc").HasColumnType("datetime2");
+                b.Property<DateTime>("NextAttemptAtUtc").HasColumnType("datetime2");
+                b.Property<int>("DeliveryAttempts").HasColumnType("int");
+                b.HasKey("Id");
+                b.HasIndex("RecipientUserId", "EventKey").IsUnique();
+                b.HasIndex("RecipientUserId", "CreatedAtUtc", "Id");
+                b.HasIndex("RecipientUserId", "ReadAtUtc", "CreatedAtUtc").HasFilter("[DismissedAtUtc] IS NULL");
+                b.HasIndex("DispatchedAtUtc", "NextAttemptAtUtc").HasFilter("[DispatchedAtUtc] IS NULL");
+                b.HasIndex("ActorUserId");
+                b.ToTable("Notifications");
+            });
+            modelBuilder.Entity("ImageStore.Domain.Notifications.NotificationPreferences", b =>
+            {
+                b.Property<Guid>("UserId").ValueGeneratedNever().HasColumnType("uniqueidentifier");
+                b.Property<bool>("InAppEnabled").HasColumnType("bit");
+                b.Property<bool>("ChatEnabled").HasColumnType("bit");
+                b.Property<bool>("FollowEnabled").HasColumnType("bit");
+                b.Property<bool>("CommentsEnabled").HasColumnType("bit");
+                b.Property<bool>("ReactionsEnabled").HasColumnType("bit");
+                b.Property<bool>("MentionsEnabled").HasColumnType("bit");
+                b.Property<bool>("AnnouncementsEnabled").HasColumnType("bit");
+                b.Property<bool>("SoundEnabled").HasColumnType("bit");
+                b.Property<bool>("SuppressActiveConversation").HasColumnType("bit");
+                b.Property<int>("SoundVolume").HasColumnType("int");
+                b.HasKey("UserId");
+                b.ToTable("NotificationPreferences", t => t.HasCheckConstraint("CK_NotificationPreferences_Volume", "[SoundVolume] >= 0 AND [SoundVolume] <= 100"));
+            });
+            modelBuilder.Entity("ImageStore.Domain.Notifications.Notification", b =>
+            {
+                b.HasOne("ImageStore.Infrastructure.Identity.ApplicationUser", null).WithMany().HasForeignKey("RecipientUserId").OnDelete(DeleteBehavior.Cascade).IsRequired();
+                b.HasOne("ImageStore.Infrastructure.Identity.ApplicationUser", null).WithMany().HasForeignKey("ActorUserId").OnDelete(DeleteBehavior.NoAction);
+            });
+            modelBuilder.Entity("ImageStore.Domain.Notifications.NotificationPreferences", b =>
+            {
+                b.HasOne("ImageStore.Infrastructure.Identity.ApplicationUser", null).WithOne().HasForeignKey("ImageStore.Domain.Notifications.NotificationPreferences", "UserId").OnDelete(DeleteBehavior.Cascade).IsRequired();
+            });
 #pragma warning restore 612, 618
         }
     }

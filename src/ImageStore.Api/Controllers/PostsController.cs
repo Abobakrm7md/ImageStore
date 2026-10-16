@@ -109,7 +109,12 @@ public sealed class PostsController(
     public Task<PagedResult<CommentDto>> ListComments(Guid postId, [FromQuery] PagedQuery query, CancellationToken cancellationToken) =>
         commentService.ListAsync(postId, query, cancellationToken);
 
+    [HttpGet("{postId:guid}/comments/{commentId:guid}")]
+    public Task<CommentDto> GetComment(Guid postId, Guid commentId, CancellationToken cancellationToken) =>
+        commentService.GetAsync(postId, commentId, cancellationToken);
+
     /// <summary>Adds a comment to an accessible post.</summary>
+    [Microsoft.AspNetCore.RateLimiting.EnableRateLimiting("SocialActivity")]
     [HttpPost("{postId:guid}/comments")]
     [Consumes("application/json")]
     [ProducesResponseType<CommentDto>(StatusCodes.Status201Created)]
@@ -148,6 +153,7 @@ public sealed class PostsController(
         reactionService.GetSummaryAsync(postId, cancellationToken);
 
     /// <summary>Sets or changes the caller's reaction (one active reaction per user and post).</summary>
+    [Microsoft.AspNetCore.RateLimiting.EnableRateLimiting("SocialActivity")]
     [HttpPut("{postId:guid}/my-reaction")]
     [Consumes("application/json")]
     [ProducesResponseType<ReactionSummaryDto>(StatusCodes.Status200OK)]

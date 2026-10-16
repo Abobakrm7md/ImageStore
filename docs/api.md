@@ -353,3 +353,9 @@ curl -s -b "$JAR" "$BASE/api/feed?page=1&pageSize=10"
 
 See [private messaging contracts](chat.md#rest-contracts) for `/api/conversations`, shared-post
 messages and read cursors, and [SignalR](chat.md#signalr-and-recovery) for `/api/chat`.
+
+## Persistent notifications
+
+See [notification API contracts](notifications.md#api) for `/api/notifications`, read/delete operations,
+preferences and Administrator-only announcements. Comments now accept optional `parentCommentId`
+and support authorized `GET /api/posts/{postId}/comments/{commentId}` navigation.

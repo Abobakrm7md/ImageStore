@@ -24,17 +24,15 @@ internal sealed class PostRepository(ImageStoreDbContext dbContext) : IPostRepos
         return details[0];
     }
 
+    internal IQueryable<ImagePost> BuildAccessibleQuery(Guid viewerUserId) =>
+        dbContext.ImagePosts.AsNoTracking().Where(post => post.AuthorUserId == viewerUserId
+            || dbContext.UserFollows.Any(follow => follow.FollowerUserId == viewerUserId && follow.FollowedUserId == post.AuthorUserId));
+
     public Task<ImagePost?> GetAccessiblePostAsync(Guid postId, Guid viewerUserId, CancellationToken cancellationToken) =>
-        dbContext.ImagePosts
-            .AsNoTracking()
+        BuildAccessibleQuery(viewerUserId)
             .Include(post => post.Image)
             .Include(post => post.Author)
-            .SingleOrDefaultAsync(
-                post => post.Id == postId
-                    && (post.AuthorUserId == viewerUserId
-                        || dbContext.UserFollows.Any(follow =>
-                            follow.FollowerUserId == viewerUserId && follow.FollowedUserId == post.AuthorUserId)),
-                cancellationToken);
+            .SingleOrDefaultAsync(post => post.Id == postId, cancellationToken);
 
     public Task<ImagePost?> GetOwnedForUpdateAsync(Guid postId, Guid authorUserId, CancellationToken cancellationToken) =>
         dbContext.ImagePosts.SingleOrDefaultAsync(

@@ -1,0 +1,167 @@
+<section class="page notification-page">
+  <header>
+    <h1>Notifications</h1>
+    <p class="muted">Your activity, in one place. {{ inbox.unread() }} unread.</p>
+  </header>
+  <details class="card preferences">
+    <summary>Notification preferences &amp; sound</summary>
+    <form (ngSubmit)="save()" (input)="editingSettings = true">
+      <p>
+        These settings control your inbox and alerts. Activity is still saved; enabling a category
+        shows its retained history. Critical notices always appear.
+      </p>
+      <div class="settings-grid">
+        <label
+          ><input type="checkbox" name="enabled" [(ngModel)]="settings.inAppEnabled" /> In-app
+          notifications</label
+        >
+        <label
+          ><input type="checkbox" name="chat" [(ngModel)]="settings.chatEnabled" /> Private messages
+          &amp; shared posts</label
+        >
+        <label
+          ><input type="checkbox" name="follow" [(ngModel)]="settings.followEnabled" /> New
+          followers</label
+        >
+        <label
+          ><input type="checkbox" name="comments" [(ngModel)]="settings.commentsEnabled" /> Comments
+          &amp; replies</label
+        >
+        <label
+          ><input type="checkbox" name="reactions" [(ngModel)]="settings.reactionsEnabled" />
+          Reactions</label
+        >
+        <label
+          ><input type="checkbox" name="mentions" [(ngModel)]="settings.mentionsEnabled" />
+          Mentions</label
+        >
+        <label
+          ><input
+            type="checkbox"
+            name="announcements"
+            [(ngModel)]="settings.announcementsEnabled"
+          />
+          System announcements</label
+        >
+        <label
+          ><input type="checkbox" name="active" [(ngModel)]="settings.suppressActiveConversation" />
+          Quiet alerts in the conversation I’m viewing</label
+        >
+        <label
+          ><input
+            type="checkbox"
+            name="sound"
+            [(ngModel)]="settings.soundEnabled"
+            (change)="inbox.sound.unlock()"
+          />
+          Sound alerts</label
+        >
+        <label
+          >Volume {{ settings.soundVolume }}%
+          <input type="range" name="volume" min="0" max="100" [(ngModel)]="settings.soundVolume"
+        /></label>
+      </div>
+      <p class="muted">
+        Browsers require an interaction before sound can play. Sound settings never remove
+        notifications.
+      </p>
+      <p role="status">{{ inbox.sound.status() }}</p>
+      <button
+        type="button"
+        class="btn btn-secondary"
+        (click)="inbox.sound.test(settings.soundVolume)"
+      >
+        Test sound
+      </button>
+      <button type="submit" class="btn btn-primary" [disabled]="busy()">Save preferences</button>
+      <p class="muted">
+        Browser / lock-screen push is not available in this release. No notification permission is
+        requested.
+      </p>
+    </form>
+  </details>
+  <div class="toolbar">
+    <label
+      >Show
+      <select [(ngModel)]="filter" (ngModelChange)="load(1)">
+        <option value="all">All</option>
+        <option value="unread">Unread</option>
+      </select></label
+    >
+    <label
+      >Type
+      <select [(ngModel)]="type" (ngModelChange)="load(1)">
+        <option value="">All types</option>
+        @for (t of types; track t.value) {
+          <option [value]="t.value">{{ t.label }}</option>
+        }
+      </select></label
+    >
+    <button
+      class="btn btn-secondary"
+      [disabled]="busy() || !inbox.unread()"
+      (click)="action('readAll')"
+    >
+      Mark all as read
+    </button>
+    <button class="btn btn-ghost" [disabled]="busy()" (click)="action('clearRead')">
+      Clear read
+    </button>
+  </div>
+  @if (error() || inbox.error()) {
+    <div role="alert" class="card">
+      {{ error() || inbox.error() }}
+      <button class="btn" (click)="inbox.refresh(); load()">Retry</button>
+    </div>
+  }
+  @if (loading()) {
+    <p role="status">Loading notifications…</p>
+  }
+  <ul class="notification-list" [attr.aria-busy]="loading()">
+    @for (n of items(); track n.id) {
+      <li class="card notification" [class.unread]="!n.readAtUtc">
+        <app-icon [name]="icon(n)" [size]="23" />
+        <div class="notification-copy">
+          <button class="activity" (click)="action('open', n)" [disabled]="busy()">
+            @if (n.critical) {
+              <strong>Important · </strong>
+            }
+            @if (n.actorDisplayName) {
+              <strong>{{ n.actorDisplayName }}</strong>
+            }
+            {{ n.text }}
+          </button>
+          <time
+            [attr.datetime]="n.createdAtUtc"
+            [title]="(n.createdAtUtc | date: 'medium') ?? ''"
+            >{{ relativeTime(n.createdAtUtc, now()) }}</time
+          >
+        </div>
+        <div class="notification-actions">
+          @if (!n.readAtUtc) {
+            <button class="btn btn-ghost btn-sm" [disabled]="busy()" (click)="action('read', n)">
+              Mark read
+            </button>
+          }
+          <button
+            class="btn btn-ghost btn-sm"
+            aria-label="Delete notification"
+            [disabled]="busy()"
+            (click)="action('remove', n)"
+          >
+            <app-icon name="trash" [size]="16" />
+          </button>
+        </div>
+      </li>
+    } @empty {
+      @if (!loading() && !error()) {
+        <li class="card empty">
+          <app-icon name="bell" [size]="32" />
+          <h2>You’re all caught up</h2>
+          <p>New activity will appear here. Check your preferences if a category is hidden.</p>
+        </li>
+      }
+    }
+  </ul>
+  <app-pagination [page]="page" [totalPages]="totalPages" (pageChange)="load($event)" />
+</section>

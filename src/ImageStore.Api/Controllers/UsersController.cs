@@ -106,6 +106,7 @@ public sealed class UsersController(
         postService.ListUserPostsAsync(userId, query, cancellationToken);
 
     /// <summary>Follows a user (immediate; idempotent). Following yourself is rejected with <c>400</c>.</summary>
+    [Microsoft.AspNetCore.RateLimiting.EnableRateLimiting("SocialActivity")]
     [HttpPost("{userId:guid}/follow")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest, ProblemJson)]

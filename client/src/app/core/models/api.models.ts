@@ -164,6 +164,7 @@ export interface UpdatePostRequest {
 }
 
 export interface CommentDto {
+  parentCommentId?: string | null;
   id: string;
   postId: string;
   author: UserSummary;

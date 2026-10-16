@@ -26,6 +26,18 @@ public sealed class ImageStoreDbContext(DbContextOptions<ImageStoreDbContext> op
 
     public DbSet<PostReaction> PostReactions => Set<PostReaction>();
 
+    public override int SaveChanges(bool acceptAllChangesOnSuccess)
+    {
+        ImageStore.Infrastructure.Notifications.NotificationEventBridge.StageAsync(this, CancellationToken.None).GetAwaiter().GetResult();
+        return base.SaveChanges(acceptAllChangesOnSuccess);
+    }
+
+    public override async Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, CancellationToken cancellationToken = default)
+    {
+        await ImageStore.Infrastructure.Notifications.NotificationEventBridge.StageAsync(this, cancellationToken);
+        return await base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
+    }
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);

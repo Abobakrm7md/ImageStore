@@ -7,12 +7,21 @@ import { AuthService } from './core/auth/auth.service';
 import { NotificationService } from './core/notifications/notification.service';
 import { ConfirmDialog } from './shared/components/confirm-dialog/confirm-dialog';
 import { ToastContainer } from './shared/components/toast-container/toast-container';
+import { NotificationBell } from './shared/components/notification-bell/notification-bell';
 import { Icon } from './shared/components/icon/icon';
 
 @Component({
   selector: 'app-root',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, ToastContainer, ConfirmDialog, Icon],
+  imports: [
+    RouterOutlet,
+    RouterLink,
+    RouterLinkActive,
+    ToastContainer,
+    ConfirmDialog,
+    Icon,
+    NotificationBell,
+  ],
   templateUrl: './app.html',
   styleUrl: './app.css',
 })

@@ -31,6 +31,7 @@ public sealed class ChatEvents(IHubContext<ChatHub> hub, IChatService chat)
     {
         var members = await chat.MembersAsync(receipt.ConversationId, ct);
         await hub.Clients.Users(members.Select(x => x.ToString()).ToList()).SendAsync("ReadUpdated", receipt, ct);
+        await hub.Clients.User(receipt.UserId.ToString()).SendAsync("NotificationChanged", (Guid?)null, ct);
     }
 }
 

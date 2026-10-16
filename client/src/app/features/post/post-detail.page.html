@@ -1,5 +1,7 @@
 <section class="page post-detail-page">
-  <a class="back-link" routerLink="/feed"><app-icon name="arrow-left" [size]="16" /> Back to feed</a>
+  <a class="back-link" routerLink="/feed"
+    ><app-icon name="arrow-left" [size]="16" /> Back to feed</a
+  >
 
   @if (post.error() && !notFound()) {
     <app-empty-state
@@ -24,11 +26,15 @@
       <header class="post-head">
         <app-avatar [user]="item.author" [size]="44" />
         <div class="post-head-text">
-          <a class="post-author" [routerLink]="['/users', item.author.id]">{{ item.author.displayName }}</a>
+          <a class="post-author" [routerLink]="['/users', item.author.id]">{{
+            item.author.displayName
+          }}</a>
           <p class="post-meta muted">
             <span>&#64;{{ item.author.userName }}</span>
             <span aria-hidden="true">·</span>
-            <time [attr.datetime]="item.createdAtUtc">{{ item.createdAtUtc | date: 'medium' }}</time>
+            <time [attr.datetime]="item.createdAtUtc">{{
+              item.createdAtUtc | date: 'medium'
+            }}</time>
             @if (item.updatedAtUtc) {
               <span>(edited)</span>
             }
@@ -61,8 +67,15 @@
             }
           </div>
           <div class="form-field">
-            <label for="post-description">Description <span class="optional">(optional)</span></label>
-            <textarea id="post-description" formControlName="description" rows="3" maxlength="2000"></textarea>
+            <label for="post-description"
+              >Description <span class="optional">(optional)</span></label
+            >
+            <textarea
+              id="post-description"
+              formControlName="description"
+              rows="3"
+              maxlength="2000"
+            ></textarea>
           </div>
           @if (postFormError()) {
             <p class="field-error" role="alert">{{ postFormError() }}</p>
@@ -124,9 +137,34 @@
     />
 
     <section class="comments" id="comments" aria-label="Comments">
-      <h2 class="section-title">{{ item.commentCount }} {{ item.commentCount === 1 ? 'comment' : 'comments' }}</h2>
+      <h2 class="section-title">
+        {{ item.commentCount }} {{ item.commentCount === 1 ? 'comment' : 'comments' }}
+      </h2>
 
+      @if (comment()) {
+        @if (selectedComment.hasValue()) {
+          @let focused = selectedComment.value();
+          <aside class="card" aria-label="Comment from notification">
+            <strong>{{ focused.author.displayName }}</strong>
+            <p>{{ focused.content }}</p>
+            <button class="btn btn-secondary btn-sm" (click)="reply(focused)">Reply</button>
+          </aside>
+        } @else if (selectedComment.error()) {
+          <p role="status">This comment is no longer available.</p>
+        }
+      }
       <form class="comment-form card" (ngSubmit)="submitComment()">
+        @if (replyingTo(); as parent) {
+          <p>
+            Replying to {{ parent.author.displayName }}
+            <button type="button" class="btn btn-ghost btn-sm" (click)="replyingTo.set(null)">
+              Cancel reply
+            </button>
+          </p>
+        }
+        <p class="muted">
+          Use &#64;username to mention someone who can see this post (up to 20 people).
+        </p>
         <label class="visually-hidden" for="new-comment">Write a comment</label>
         <textarea
           id="new-comment"
@@ -139,7 +177,11 @@
           @if (commentControl.invalid && commentControl.touched) {
             <p class="field-error">A comment cannot be empty (max 2000 characters).</p>
           }
-          <button type="submit" class="btn btn-primary btn-sm" [disabled]="sendingComment() || commentControl.invalid">
+          <button
+            type="submit"
+            class="btn btn-primary btn-sm"
+            [disabled]="sendingComment() || commentControl.invalid"
+          >
             @if (sendingComment()) {
               <span class="spinner" aria-hidden="true"></span>
             }
@@ -152,7 +194,9 @@
 
       @if (comments.error()) {
         <app-empty-state heading="Couldn't load comments" icon="alert" tone="error">
-          <button type="button" class="btn btn-primary" (click)="comments.reload()">Try again</button>
+          <button type="button" class="btn btn-primary" (click)="comments.reload()">
+            Try again
+          </button>
         </app-empty-state>
       } @else if (comments.hasValue()) {
         @let page = comments.value();
@@ -161,11 +205,13 @@
         } @else {
           <ul class="comment-list">
             @for (comment of page.items; track comment.id) {
-              <li class="comment card">
+              <li class="comment card" [id]="'comment-' + comment.id">
                 <app-avatar [user]="comment.author" [size]="34" />
                 <div class="comment-body">
                   <p class="comment-head">
-                    <a [routerLink]="['/users', comment.author.id]">{{ comment.author.displayName }}</a>
+                    <a [routerLink]="['/users', comment.author.id]">{{
+                      comment.author.displayName
+                    }}</a>
                     <span class="muted">&#64;{{ comment.author.userName }}</span>
                     <time class="muted" [attr.datetime]="comment.createdAtUtc">{{
                       comment.createdAtUtc | date: 'short'
@@ -183,16 +229,38 @@
                         aria-label="Edit comment"
                       ></textarea>
                       <div class="comment-edit-actions">
-                        <button type="submit" class="btn btn-primary btn-sm" [disabled]="editCommentControl.invalid">Save</button>
-                        <button type="button" class="btn btn-ghost btn-sm" (click)="cancelEditComment()">Cancel</button>
+                        <button
+                          type="submit"
+                          class="btn btn-primary btn-sm"
+                          [disabled]="editCommentControl.invalid"
+                        >
+                          Save
+                        </button>
+                        <button
+                          type="button"
+                          class="btn btn-ghost btn-sm"
+                          (click)="cancelEditComment()"
+                        >
+                          Cancel
+                        </button>
                       </div>
                     </form>
                   } @else {
+                    @if (comment.parentCommentId) {
+                      <a
+                        [routerLink]="['/posts', id()]"
+                        [queryParams]="{ comment: comment.parentCommentId }"
+                        >In reply to a comment</a
+                      >
+                    }
                     <p class="comment-content">{{ comment.content }}</p>
                   }
                 </div>
                 @if (editingCommentId() !== comment.id) {
                   <div class="comment-actions">
+                    <button type="button" class="btn btn-ghost btn-sm" (click)="reply(comment)">
+                      Reply
+                    </button>
                     @if (comment.isMine) {
                       <button
                         type="button"

@@ -42,6 +42,12 @@ export class ChatPage {
     });
     this.route.queryParamMap.pipe(takeUntilDestroyed()).subscribe((params) => {
       this.share = params.get('share') ?? undefined;
+      const conversation = params.get('conversation');
+      if (conversation)
+        void this.chat
+          .get(conversation)
+          .then((c) => this.choose(c))
+          .catch(() => this.error.set('Conversation is unavailable.'));
       const user = params.get('user');
       if (user)
         void this.chat

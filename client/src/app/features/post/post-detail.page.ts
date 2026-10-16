@@ -11,7 +11,13 @@ import {
   signal,
 } from '@angular/core';
 import { rxResource, takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { FormControl, FormsModule, NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import {
+  FormControl,
+  FormsModule,
+  NonNullableFormBuilder,
+  ReactiveFormsModule,
+  Validators,
+} from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { errorMessage, toApiError } from '../../core/http/api-error';
 import { NotificationService } from '../../core/notifications/notification.service';
@@ -49,6 +55,7 @@ export const COMMENTS_PAGE_SIZE = 20;
 export class PostDetailPage {
   /** Bound from the :id route parameter. */
   readonly id = input.required<string>();
+  readonly comment = input<string>();
 
   protected readonly api = inject(PostApiService);
   private readonly router = inject(Router);
@@ -74,6 +81,15 @@ export class PostDetailPage {
 
   /* ---------------- comments ---------------- */
 
+  protected readonly replyingTo = signal<CommentDto | null>(null);
+  protected readonly selectedComment = rxResource({
+    params: () => (this.comment() ? { postId: this.id(), id: this.comment()! } : undefined),
+    stream: ({ params }) => this.api.getComment(params.postId, params.id),
+  });
+  protected reply(comment: CommentDto): void {
+    this.replyingTo.set(comment);
+    document.getElementById('new-comment')?.focus();
+  }
   protected readonly commentsPage = signal(1);
   protected readonly comments = rxResource({
     params: () => ({ postId: this.id(), page: this.commentsPage() }),
@@ -134,12 +150,13 @@ export class PostDetailPage {
 
     this.sendingComment.set(true);
     this.api
-      .createComment(this.id(), content)
+      .createComment(this.id(), content, this.replyingTo()?.id)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (comment) => {
           this.sendingComment.set(false);
           this.commentControl.reset('');
+          this.replyingTo.set(null);
           // Append locally – the list refreshes without a full reload.
           this.comments.update((page) =>
             page

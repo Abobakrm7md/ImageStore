@@ -5,6 +5,7 @@ import { ChangeDetectionStrategy, Component, computed, input } from '@angular/co
  * unlike emoji or symbol glyphs, which depend on the fonts installed on the device.
  */
 const ICONS = {
+  bell: ['M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9', 'M10 21h4'],
   alert: [
     'M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z',
     'M12 9v4',

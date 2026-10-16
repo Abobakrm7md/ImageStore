@@ -6,7 +6,7 @@ import {
   HubConnectionState,
   LogLevel,
 } from '@microsoft/signalr';
-import { firstValueFrom } from 'rxjs';
+import { firstValueFrom, Subject } from 'rxjs';
 import { AuthService } from '../auth/auth.service';
 import { UserSummary } from '../models/api.models';
 
@@ -42,6 +42,8 @@ export class ChatService {
   private readonly http = inject(HttpClient);
   private readonly auth = inject(AuthService);
   readonly status = signal('Disconnected');
+  readonly activeConversation = signal<string | undefined>(undefined);
+  readonly notificationEvents = new Subject<string | null>();
   readonly revision = signal(0);
   readonly typing = signal<{ id: string; until: number } | null>(null);
   private hub?: HubConnection;
@@ -65,6 +67,7 @@ export class ChatService {
         this.status.set('Connected');
         if (this.active) await hub.invoke('Join', this.active).catch(() => {});
         this.revision.update((n) => n + 1);
+        this.notificationEvents.next(null);
       };
       const start = async () => {
         if (closed) return;
@@ -79,6 +82,10 @@ export class ChatService {
           }
         }
       };
+      hub.on('NotificationChanged', (id: string | null) => {
+        this.notificationEvents.next(id);
+        this.revision.update((n) => n + 1);
+      });
       hub.on('ConversationChanged', () => this.revision.update((n) => n + 1));
       hub.on('ReadUpdated', () => this.revision.update((n) => n + 1));
       hub.on('Typing', (id: string, _user: string, typing: boolean) =>
@@ -98,6 +105,7 @@ export class ChatService {
         clearTimeout(retry);
         this.hub = undefined;
         this.active = undefined;
+        this.activeConversation.set(undefined);
         this.typing.set(null);
         this.status.set('Disconnected');
         void hub.stop();
@@ -129,6 +137,7 @@ export class ChatService {
   async select(id?: string) {
     const old = this.active;
     this.active = id;
+    this.activeConversation.set(id);
     if (this.hub?.state !== HubConnectionState.Connected) return;
     if (old) await this.hub.invoke('Leave', old).catch(() => {});
     if (id) await this.hub.invoke('Join', id).catch(() => {});

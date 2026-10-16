@@ -43,8 +43,17 @@ export class PostApiService {
     );
   }
 
-  createComment(postId: string, content: string): Observable<CommentDto> {
-    return this.http.post<CommentDto>(`/api/posts/${encodeURIComponent(postId)}/comments`, { content });
+  getComment(postId: string, commentId: string): Observable<CommentDto> {
+    return this.http.get<CommentDto>(
+      `/api/posts/${encodeURIComponent(postId)}/comments/${encodeURIComponent(commentId)}`,
+    );
+  }
+
+  createComment(postId: string, content: string, parentCommentId?: string): Observable<CommentDto> {
+    return this.http.post<CommentDto>(`/api/posts/${encodeURIComponent(postId)}/comments`, {
+      content,
+      ...(parentCommentId ? { parentCommentId } : {}),
+    });
   }
 
   updateComment(postId: string, commentId: string, content: string): Observable<CommentDto> {

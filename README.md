@@ -326,3 +326,14 @@ receipts, typing, reconnect recovery, and one shared cookie-authenticated Signal
 See [chat architecture, API, deployment and tests](docs/chat.md) for migration instructions,
 status semantics and operational limitations. The root `compose.yaml` runs the existing app
 behind TLS Nginx with an **external SQL Server** and persistent uploads/authentication keys.
+
+## Notification center
+
+The **Notifications** bell provides persistent, real-time activity for private messages/shared posts,
+follows, comments, replies, mentions, reactions and important announcements. Open the notification
+center to filter activity, mark it read, clear it, or configure categories and optional sound.
+Preferences persist across sessions; Web Audio respects browser interaction requirements.
+
+See [notification architecture, API, reliability, setup and Web Push roadmap](docs/notifications.md).
+Apply the `AddNotifications` migration before deployment. The feature reuses the existing SignalR
+connection, Docker/Nginx configuration and external SQL Server; Web Push is explicitly deferred.

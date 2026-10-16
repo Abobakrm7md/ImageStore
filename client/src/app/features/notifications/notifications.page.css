@@ -1,0 +1,101 @@
+.notification-page {
+  max-width: 960px;
+  margin: auto;
+}
+.preferences {
+  padding: 1.1rem;
+  margin: 1rem 0;
+}
+.preferences summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+.preferences form {
+  margin-top: 1rem;
+}
+.settings-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.85rem;
+}
+.settings-grid label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+  margin: 1.25rem 0;
+}
+.toolbar label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.notification-list {
+  list-style: none;
+  padding: 0;
+  display: grid;
+  gap: 0.6rem;
+}
+.notification {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  border-left: 3px solid transparent;
+}
+.notification.unread {
+  border-left-color: var(--color-primary, #6b60d7);
+  background: var(--color-surface-muted);
+}
+.notification-copy {
+  flex: 1;
+  min-width: 0;
+}
+.activity {
+  background: none;
+  border: none;
+  text-align: left;
+  color: inherit;
+  cursor: pointer;
+  padding: 0;
+  font: inherit;
+  overflow-wrap: anywhere;
+}
+.activity:hover {
+  text-decoration: underline;
+}
+.notification-copy time {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  margin-top: 0.3rem;
+}
+.notification-actions {
+  display: flex;
+  gap: 0.3rem;
+}
+.empty {
+  text-align: center;
+  padding: 3rem 1rem;
+}
+select {
+  padding: 0.5rem;
+  border-radius: 8px;
+}
+@media (max-width: 600px) {
+  .settings-grid {
+    grid-template-columns: 1fr;
+  }
+  .notification {
+    gap: 0.6rem;
+    flex-wrap: wrap;
+  }
+  .notification-actions {
+    margin-left: auto;
+  }
+}

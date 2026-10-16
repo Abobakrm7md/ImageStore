@@ -9,6 +9,8 @@ namespace ImageStore.Application.Posts;
 /// </summary>
 public interface ICommentService
 {
+    Task<CommentDto> GetAsync(Guid postId, Guid commentId, CancellationToken cancellationToken);
+
     Task<PagedResult<CommentDto>> ListAsync(Guid postId, PagedQuery query, CancellationToken cancellationToken);
 
     Task<CommentDto> CreateAsync(Guid postId, CreateCommentRequest request, CancellationToken cancellationToken);

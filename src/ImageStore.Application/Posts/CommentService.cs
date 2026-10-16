@@ -9,6 +9,14 @@ public sealed class CommentService(
     ICurrentUser currentUser,
     TimeProvider timeProvider) : ICommentService
 {
+    public async Task<CommentDto> GetAsync(Guid postId, Guid commentId, CancellationToken cancellationToken)
+    {
+        var viewer = currentUser.GetRequiredUserId();
+        var post = await EnsureAccessibleAsync(postId, viewer, cancellationToken);
+        var comment = await comments.GetAsync(postId, commentId, cancellationToken) ?? throw new NotFoundException("Comment");
+        return ToDto(comment, post.AuthorUserId, viewer);
+    }
+
     public async Task<PagedResult<CommentDto>> ListAsync(Guid postId, PagedQuery query, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(query);
@@ -39,12 +47,15 @@ public sealed class CommentService(
         PostRequestValidator.ValidateCommentContent(request.Content, errors);
         errors.ThrowIfAny();
 
+        if (request.ParentCommentId is Guid parentId && await comments.GetAsync(postId, parentId, cancellationToken) is null)
+            throw new NotFoundException("Parent comment");
+
         var comment = Comment.Create(
             Guid.CreateVersion7(),
             postId,
             authorId,
             request.Content!,
-            timeProvider.GetUtcNow().UtcDateTime);
+            timeProvider.GetUtcNow().UtcDateTime, request.ParentCommentId);
 
         comments.Add(comment);
         await comments.SaveChangesAsync(cancellationToken);
@@ -113,6 +124,7 @@ public sealed class CommentService(
             comment.CreatedAtUtc,
             comment.UpdatedAtUtc,
             isMine,
-            isMine || postAuthorId == viewerId);
+            isMine || postAuthorId == viewerId,
+            comment.ParentCommentId);
     }
 }
